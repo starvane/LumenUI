@@ -76,6 +76,20 @@ local Tabs = {
     Settings = Window:AddTab({ Name = "Settings", Icon = "settings" }),
 }
 
+local InfoTab, InfoItems = Window:InfoTab({
+    Name = "Info",
+    Icon = "info",
+    SectionTitle = "About",
+    Version = "1.0.0",
+
+    Cards = {
+        {
+            Title = "BolongUi",
+            Description = "Contoh card dari API InfoTab.",
+        },
+    },
+})
+
 local AutoFarmSection = Tabs.AutoFarm:AddSection("Auto Farm", true)
 local WebhookSection = Tabs.AutoFarm:AddSection("Webhook", true)
 local BeatState = {
@@ -741,18 +755,6 @@ WebhookSection:AddButton({
         else
             Notify("Webhook Failed", msg, 5)
         end
-    end,
-})
-
-local MenuSection = Tabs.Settings:AddSection("Menu", false)
-
-MenuSection:AddKeybind({
-    Title = "Menu Keybind",
-    Content = "Toggle the UI",
-    Default = Enum.KeyCode.RightShift,
-    Save = false,
-    Callback = function()
-        pcall(function() Window:ToggleUI() end)
     end,
 })
 
