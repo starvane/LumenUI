@@ -744,7 +744,7 @@ WebhookSection:AddButton({
     end,
 })
 
-local MenuSection = Tabs.Settings:AddSection("Menu", true)
+local MenuSection = Tabs.Settings:AddSection("Menu", false)
 
 MenuSection:AddKeybind({
     Title = "Menu Keybind",
