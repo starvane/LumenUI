@@ -35,7 +35,7 @@ local Window = Chloex:Window({
     ["Tab Width"] = 120,
     Search = true,
 
-    Aktifkan ini kalau ingin memakai key system:
+    -- Aktifkan ini kalau ingin memakai key system:
     KeySystem = {
         Title = "BolongHub",
         Note = "Masukkan key untuk melanjutkan.",
