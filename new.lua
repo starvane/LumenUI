@@ -9,7 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 
-local UI_URL = "https://raw.githubusercontent.com/RillBoys/bolong.catui/refs/heads/main/b0lngUi.lua"
+local UI_URL = "https://raw.githubusercontent.com/starvane/LumenUI/refs/heads/main/main.lua"
 local okUI, Chloex = pcall(function()
     return loadstring(game:HttpGet(UI_URL))()
 end)
@@ -50,7 +50,7 @@ local function Notify(title, desc, duration)
     if Library.Unloaded then return end
     pcall(function()
         Chloex:MakeNotify({
-            Title = title or "VD Auto Farm",
+            Title = title or "Oxio Auto Farm",
             Description = "Notification",
             Content = desc or "",
             Delay = duration or 3,
@@ -59,10 +59,10 @@ local function Notify(title, desc, duration)
 end
 
 local Window = Chloex:Window({
-    Title = "VD Auto Farm",
-    Author = "RillBoys",
+    Title = "Oxio Auto Farm",
+    Author = "starvane",
     Footer = "version: 1.0.0",
-    Color = Color3.fromRGB(120, 90, 255),
+    Color = Color3.fromRGB(255, 255, 255),
     ["Tab Width"] = 120,
     Version = 1,
     Search = true,
@@ -357,100 +357,6 @@ local function FindFinish(map)
 	end)
 	return pos
 end
--- =========================================================
--- Bolong Gate Teleport (comparison mode)
--- =========================================================
-local BolongGateState = { Gates = {}, Map = nil, AddedConn = nil, RemovingConn = nil }
-
-local function RemoveGateFromCache(gate)
-    for i = #BolongGateState.Gates, 1, -1 do
-        if BolongGateState.Gates[i] == gate then table.remove(BolongGateState.Gates, i) end
-    end
-end
-
-local function AddGateToCache(obj)
-    if not obj or obj.Name ~= "Gate" then return end
-    for _, existing in ipairs(BolongGateState.Gates) do
-        if existing == obj then return end
-    end
-    table.insert(BolongGateState.Gates, obj)
-end
-
-local function RefreshBolongGateCache(map)
-    if BolongGateState.AddedConn then BolongGateState.AddedConn:Disconnect() end
-    if BolongGateState.RemovingConn then BolongGateState.RemovingConn:Disconnect() end
-    BolongGateState.Map = map
-    BolongGateState.Gates = {}
-    if not map then return end
-    for _, obj in ipairs(map:GetDescendants()) do AddGateToCache(obj) end
-    BolongGateState.AddedConn = map.DescendantAdded:Connect(AddGateToCache)
-    BolongGateState.RemovingConn = map.DescendantRemoving:Connect(RemoveGateFromCache)
-end
-
-local function GetGateCFrame(gate)
-    if not gate or not gate.Parent then return nil end
-    if gate:IsA("Model") then
-        local ok, pivot = pcall(function() return gate:GetPivot() end)
-        if ok and pivot then return pivot end
-    end
-    if gate:IsA("BasePart") then return gate.CFrame end
-    local part = gate:FindFirstChildWhichIsA("BasePart", true)
-    return part and part.CFrame or nil
-end
-
-local function GetGateOffset(gate)
-    local size = Vector3.new(4, 6, 4)
-    pcall(function()
-        local extents = gate:GetExtentsSize()
-        if extents.Magnitude > 0 then size = extents end
-    end)
-    return math.max(size.Z * 0.5, 4) + 2
-end
-
-local function FindNearestBolongGate()
-    local root = GetRoot()
-    if not root then return nil end
-    local nearestGate, nearestDistance = nil, math.huge
-    for i = #BolongGateState.Gates, 1, -1 do
-        local gate = BolongGateState.Gates[i]
-        if not gate or not gate.Parent then
-            table.remove(BolongGateState.Gates, i)
-        else
-            local cf = GetGateCFrame(gate)
-            if cf then
-                local distance = (root.Position - cf.Position).Magnitude
-                if distance < nearestDistance then
-                    nearestDistance, nearestGate = distance, gate
-                end
-            end
-        end
-    end
-    return nearestGate, nearestDistance
-end
-
-local function FindBolongExitPosition()
-    local map = Workspace:FindFirstChild("Map")
-    if not map then return nil, "Map not found" end
-    if BolongGateState.Map ~= map then RefreshBolongGateCache(map) end
-    local gate, distance = FindNearestBolongGate()
-    if not gate then return nil, "No Gate object found" end
-    local gateCFrame = GetGateCFrame(gate)
-    if not gateCFrame then return nil, "Gate has no valid CFrame" end
-    local offset = GetGateOffset(gate)
-    local exitPos = gateCFrame.Position - gateCFrame.LookVector * offset + Vector3.new(0, 2, 0)
-    return exitPos, string.format("Gate %s (%.0f studs)", gate:GetFullName(), distance or 0)
-end
-
-local function TeleportUsingBolongGate()
-    local root = GetRoot()
-    if not root then Notify("Bolong Gate", "Character not loaded"); return false end
-    local exitPos, detail = FindBolongExitPosition()
-    if not exitPos then Notify("Bolong Gate", detail or "Gate not found"); return false end
-    root.CFrame = CFrame.new(exitPos)
-    Notify("Bolong Gate", "Teleported to nearest Gate")
-    return true
-end
-
 local function BeatGame()
 	if not ToggleValue("EnableAutoFarm") then
 		BeatState.BeatSurvivorDone = false
@@ -477,14 +383,10 @@ local function BeatGame()
 		Notify("⚠️ No Map", "Waiting for map")
 		return
 	end
-	local exitPos
-	if ToggleValue("UseBolongGate") then
-		local bolongExitPos, detail = FindBolongExitPosition()
-		if not bolongExitPos then Notify("⚠️ Gate Not Found", detail or "No Gate object available"); return end
-		exitPos = bolongExitPos
-	else
-		exitPos = FindFinish(map)
-		if not exitPos then Notify("⚠️ Finish Not Found", "Map unsupported"); return end
+	local exitPos = FindFinish(map)
+	if not exitPos then
+		Notify("⚠️ Finish Not Found", "Map unsupported")
+		return
 	end
 	if BeatState.LastFinishPos and (exitPos - BeatState.LastFinishPos).Magnitude > 50 then
 		BeatState.BeatSurvivorDone = false
@@ -786,40 +688,12 @@ ServerHop = function()
 	ResetTeleportState()
 	IsHopping = false
 end
--- =========================================================
--- BOLONGUI CONTROLS
--- =========================================================
 
 SetCompat(Toggles, "EnableAutoFarm", AutoFarmSection:AddToggle({
     Title = "Enable Auto Farm",
     Content = "Teleport Survivor to finish",
     Default = false,
 }))
-
-SetCompat(Toggles, "UseBolongGate", AutoFarmSection:AddToggle({
-    Title = "Bolong Gate Mode",
-    Content = "Use live Gate-object detection instead of FindFinish",
-    Default = false,
-    Callback = function(v)
-        BeatState.BeatSurvivorDone = false
-        BeatState.LastFinishPos = nil
-        if v then
-            local map = Workspace:FindFirstChild("Map")
-            if map then
-                RefreshBolongGateCache(map)
-                Notify("Bolong Gate", string.format("Cached %d Gate object(s)", #BolongGateState.Gates))
-            else
-                Notify("Bolong Gate", "Map not loaded yet")
-            end
-        end
-    end,
-}))
-
-AutoFarmSection:AddButton({
-    Title = "Test Bolong Gate Teleport",
-    SubTitle = "Teleport once",
-    Callback = function() TeleportUsingBolongGate() end,
-})
 
 SetCompat(Toggles, "ServerHop", AutoFarmSection:AddToggle({
     Title = "Server Hop",
@@ -872,53 +746,6 @@ WebhookSection:AddButton({
 
 local MenuSection = Tabs.Settings:AddSection("Menu", true)
 
-SetCompat(Toggles, "KeybindMenuOpen", MenuSection:AddToggle({
-    Title = "UI Visibility",
-    Content = "Show or hide BolongUi",
-    Default = true,
-    Save = false,
-    Callback = function(v)
-        if v then
-            pcall(function() Window:Show() end)
-        else
-            pcall(function() Window:Hide() end)
-        end
-    end,
-}))
-
-SetCompat(Toggles, "ShowCustomCursor", MenuSection:AddToggle({
-    Title = "Custom Cursor",
-    Content = "BolongUi handles cursor styling internally",
-    Default = false,
-    Save = false,
-}))
-
-SetCompat(Options, "NotificationSide", MenuSection:AddDropdown({
-    Title = "Notification Side",
-    Content = "Stored preference",
-    Options = {"Left", "Right"},
-    Default = "Right",
-    Save = false,
-}))
-
-SetCompat(Options, "DPIDropdown", MenuSection:AddDropdown({
-    Title = "DPI Scale",
-    Content = "Responsive BolongUi sizing",
-    Options = {"50%", "75%", "100%", "125%", "150%", "175%", "200%"},
-    Default = "100%",
-    Save = false,
-}))
-
-SetCompat(Options, "UICornerSlider", MenuSection:AddSlider({
-    Title = "Corner Radius",
-    Content = "Visual preference",
-    Min = 0,
-    Max = 20,
-    Default = 8,
-    Increment = 1,
-    Save = false,
-}))
-
 MenuSection:AddKeybind({
     Title = "Menu Keybind",
     Content = "Toggle the UI",
@@ -926,17 +753,6 @@ MenuSection:AddKeybind({
     Save = false,
     Callback = function()
         pcall(function() Window:ToggleUI() end)
-    end,
-})
-
-MenuSection:AddDivider()
-
-MenuSection:AddButton({
-    Title = "Unload",
-    SubTitle = "Destroy UI and stop loops",
-    Callback = function()
-        Library.Unloaded = true
-        pcall(function() Window:DestroyGui() end)
     end,
 })
 
