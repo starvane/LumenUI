@@ -15,7 +15,7 @@ local okUI, Chloex = pcall(function()
 end)
 
 if not okUI or not Chloex then
-    warn("[VD Auto Farm] Failed to load BolongUi:", Chloex)
+    warn("[VD Auto Farm] Failed to load LumenUi:", Chloex)
     return
 end
 
