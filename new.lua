@@ -71,11 +71,6 @@ local Window = Chloex:Window({
 
 if not Window then return end
 
-local Tabs = {
-    AutoFarm = Window:AddTab({ Name = "Auto Farm", Icon = "zap" }),
-    Settings = Window:AddTab({ Name = "Settings", Icon = "settings" }),
-}
-
 local InfoTab, InfoItems = Window:InfoTab({
     Name = "Info",
     Icon = "info",
@@ -89,6 +84,11 @@ local InfoTab, InfoItems = Window:InfoTab({
         },
     },
 })
+
+local Tabs = {
+    AutoFarm = Window:AddTab({ Name = "Auto Farm", Icon = "zap" }),
+    Settings = Window:AddTab({ Name = "Settings", Icon = "settings" }),
+}
 
 local AutoFarmSection = Tabs.AutoFarm:AddSection("Auto Farm", true)
 local WebhookSection = Tabs.AutoFarm:AddSection("Webhook", true)
