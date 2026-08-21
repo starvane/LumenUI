@@ -357,6 +357,100 @@ local function FindFinish(map)
 	end)
 	return pos
 end
+-- =========================================================
+-- Bolong Gate Teleport (comparison mode)
+-- =========================================================
+local BolongGateState = { Gates = {}, Map = nil, AddedConn = nil, RemovingConn = nil }
+
+local function RemoveGateFromCache(gate)
+    for i = #BolongGateState.Gates, 1, -1 do
+        if BolongGateState.Gates[i] == gate then table.remove(BolongGateState.Gates, i) end
+    end
+end
+
+local function AddGateToCache(obj)
+    if not obj or obj.Name ~= "Gate" then return end
+    for _, existing in ipairs(BolongGateState.Gates) do
+        if existing == obj then return end
+    end
+    table.insert(BolongGateState.Gates, obj)
+end
+
+local function RefreshBolongGateCache(map)
+    if BolongGateState.AddedConn then BolongGateState.AddedConn:Disconnect() end
+    if BolongGateState.RemovingConn then BolongGateState.RemovingConn:Disconnect() end
+    BolongGateState.Map = map
+    BolongGateState.Gates = {}
+    if not map then return end
+    for _, obj in ipairs(map:GetDescendants()) do AddGateToCache(obj) end
+    BolongGateState.AddedConn = map.DescendantAdded:Connect(AddGateToCache)
+    BolongGateState.RemovingConn = map.DescendantRemoving:Connect(RemoveGateFromCache)
+end
+
+local function GetGateCFrame(gate)
+    if not gate or not gate.Parent then return nil end
+    if gate:IsA("Model") then
+        local ok, pivot = pcall(function() return gate:GetPivot() end)
+        if ok and pivot then return pivot end
+    end
+    if gate:IsA("BasePart") then return gate.CFrame end
+    local part = gate:FindFirstChildWhichIsA("BasePart", true)
+    return part and part.CFrame or nil
+end
+
+local function GetGateOffset(gate)
+    local size = Vector3.new(4, 6, 4)
+    pcall(function()
+        local extents = gate:GetExtentsSize()
+        if extents.Magnitude > 0 then size = extents end
+    end)
+    return math.max(size.Z * 0.5, 4) + 2
+end
+
+local function FindNearestBolongGate()
+    local root = GetRoot()
+    if not root then return nil end
+    local nearestGate, nearestDistance = nil, math.huge
+    for i = #BolongGateState.Gates, 1, -1 do
+        local gate = BolongGateState.Gates[i]
+        if not gate or not gate.Parent then
+            table.remove(BolongGateState.Gates, i)
+        else
+            local cf = GetGateCFrame(gate)
+            if cf then
+                local distance = (root.Position - cf.Position).Magnitude
+                if distance < nearestDistance then
+                    nearestDistance, nearestGate = distance, gate
+                end
+            end
+        end
+    end
+    return nearestGate, nearestDistance
+end
+
+local function FindBolongExitPosition()
+    local map = Workspace:FindFirstChild("Map")
+    if not map then return nil, "Map not found" end
+    if BolongGateState.Map ~= map then RefreshBolongGateCache(map) end
+    local gate, distance = FindNearestBolongGate()
+    if not gate then return nil, "No Gate object found" end
+    local gateCFrame = GetGateCFrame(gate)
+    if not gateCFrame then return nil, "Gate has no valid CFrame" end
+    local offset = GetGateOffset(gate)
+    local exitPos = gateCFrame.Position - gateCFrame.LookVector * offset + Vector3.new(0, 2, 0)
+    return exitPos, string.format("Gate %s (%.0f studs)", gate:GetFullName(), distance or 0)
+end
+
+local function TeleportUsingBolongGate()
+    local root = GetRoot()
+    if not root then Notify("Bolong Gate", "Character not loaded"); return false end
+    local exitPos, detail = FindBolongExitPosition()
+    if not exitPos then Notify("Bolong Gate", detail or "Gate not found"); return false end
+    root.CFrame = CFrame.new(exitPos)
+    Notify("Bolong Gate", "Teleported to nearest Gate")
+    return true
+end
+
 local function BeatGame()
 	if not ToggleValue("EnableAutoFarm") then
 		BeatState.BeatSurvivorDone = false
@@ -383,10 +477,14 @@ local function BeatGame()
 		Notify("⚠️ No Map", "Waiting for map")
 		return
 	end
-	local exitPos = FindFinish(map)
-	if not exitPos then
-		Notify("⚠️ Finish Not Found", "Map unsupported")
-		return
+	local exitPos
+	if ToggleValue("UseBolongGate") then
+		local bolongExitPos, detail = FindBolongExitPosition()
+		if not bolongExitPos then Notify("⚠️ Gate Not Found", detail or "No Gate object available"); return end
+		exitPos = bolongExitPos
+	else
+		exitPos = FindFinish(map)
+		if not exitPos then Notify("⚠️ Finish Not Found", "Map unsupported"); return end
 	end
 	if BeatState.LastFinishPos and (exitPos - BeatState.LastFinishPos).Magnitude > 50 then
 		BeatState.BeatSurvivorDone = false
@@ -697,6 +795,31 @@ SetCompat(Toggles, "EnableAutoFarm", AutoFarmSection:AddToggle({
     Content = "Teleport Survivor to finish",
     Default = false,
 }))
+
+SetCompat(Toggles, "UseBolongGate", AutoFarmSection:AddToggle({
+    Title = "Bolong Gate Mode",
+    Content = "Use live Gate-object detection instead of FindFinish",
+    Default = false,
+    Callback = function(v)
+        BeatState.BeatSurvivorDone = false
+        BeatState.LastFinishPos = nil
+        if v then
+            local map = Workspace:FindFirstChild("Map")
+            if map then
+                RefreshBolongGateCache(map)
+                Notify("Bolong Gate", string.format("Cached %d Gate object(s)", #BolongGateState.Gates))
+            else
+                Notify("Bolong Gate", "Map not loaded yet")
+            end
+        end
+    end,
+}))
+
+AutoFarmSection:AddButton({
+    Title = "Test Bolong Gate Teleport",
+    SubTitle = "Teleport once",
+    Callback = function() TeleportUsingBolongGate() end,
+})
 
 SetCompat(Toggles, "ServerHop", AutoFarmSection:AddToggle({
     Title = "Server Hop",
