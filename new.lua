@@ -34,8 +34,17 @@ local LocalPlayer = Players.LocalPlayer
 ----------------------------------------------------------------
 -- LOAD LIBRARY (LumenHub)
 ----------------------------------------------------------------
-local LIB_URL = "https://raw.githubusercontent.com/starvane/LumenUI/refs/heads/main/library.lua" -- GANTI dengan URL library kamu
-local Lumen = loadstring(game:HttpGet(LIB_URL))()
+local LIB_URL = "https://raw.githubusercontent.com/starvane/LumenUI/refs/heads/main/library.lua"
+
+local Lumen
+local okLib, errLib = pcall(function()
+    Lumen = loadstring(game:HttpGet(LIB_URL))()
+end)
+
+if not okLib or not Lumen then
+    warn("[Example] Gagal memuat LumenHub library:", errLib)
+    return
+end
 
 ----------------------------------------------------------------
 -- COMPATIBILITY SHIM
@@ -803,13 +812,6 @@ Options.MenuKeybind = MenuGroup:AddKeybind({
 		if holder then
 			holder.Visible = not holder.Visible
 		end
-	end,
-})
-
-MenuGroup:AddButton({
-	Title = "Unload",
-	Callback = function()
-		Library:Unload()
 	end,
 })
 
