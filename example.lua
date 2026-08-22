@@ -1,514 +1,531 @@
--- example.lua
--- Demonstrates ALL features of the LumenHub UI library, including Key System.
--- Run this script in a Roblox executor that supports the required functions.
+--[[
+    ULTIMATE EXAMPLE.LUA — LumenHub UI Library
+    ------------------------------------------
+    File ini mendemonstrasikan SEMUA komponen/fitur yang tersedia di library
+    LumenHub: Window, Tabs, Section, semua Items (Toggle, Slider, Dropdown,
+    ColorPicker, Input, Keybind, Keybind2, Button, Panel, Paragraph, Card,
+    CardWidget/CardsWidget, Banner, Divider, SubSection, Space, HStack,
+    VStack, PresetManager, Config Manager, TargetSelector), Notify,
+    InfoTab, Export/Import Config, KeySystem, dan ToggleUI.
 
-local SOURCE_URL = "https://raw.githubusercontent.com/starvane/LumenUI/refs/heads/main/library.lua" -- Replace with your actual loading method (loadstring, require, etc.)
-local ok, Lumen = pcall(function()
-    return loadstring(game:HttpGet(SOURCE_URL))()
+    Cara pakai: ganti LIB_URL di bawah dengan URL raw file library kamu,
+    atau replace baris loadstring dengan cara load library kamu sendiri.
+]]
+
+----------------------------------------------------------------
+-- 1) LOAD LIBRARY
+----------------------------------------------------------------
+local LIB_URL = "https://raw.githubusercontent.com/starvane/LumenUI/refs/heads/main/library.lua"
+
+local Lumen
+local okLib, errLib = pcall(function()
+    Lumen = loadstring(game:HttpGet(LIB_URL))()
 end)
 
-if not ok or not Lumen then
-    warn("[LumenHub] Gagal memuat LumenUI:", Chloex)
+if not okLib or not Lumen then
+    warn("[Example] Gagal memuat LumenHub library:", errLib)
     return
 end
 
--- ==============================
--- 1. CREATE THE MAIN WINDOW WITH KEY SYSTEM
--- ==============================
+----------------------------------------------------------------
+-- 2) WINDOW (semua opsi GuiConfig)
+----------------------------------------------------------------
 local Window = Lumen:Window({
-    Title = "LumenHub Complete Demo",
-    Author = "Example User",
-    Color = Color3.fromRGB(0, 150, 255), -- accent color
-    Version = 1,
-    Search = true, -- enable global search (Ctrl+Shift+F or Ctrl+O)
-    Image = "84034353458936", -- toggle button icon
-    Footer = "All features showcased",
-    Discord = "https://discord.gg/example", -- optional Discord invite
+    Title = "LumenHub | Ultimate Example",
+    Image = "84034353458936",           -- asset id icon toggle button
+    Footer = "v1.0.0 • build demo",
+    Author = "YourName",
+    Color = Color3.fromRGB(120, 190, 255), -- accent color
+    ["Tab Width"] = 130,
+    Version = 1,                         -- dipakai untuk sistem config
+    Search = true,                       -- aktifkan search bar (Ctrl+F / Ctrl+O)
+    Folder = "UltimateExample",          -- subfolder config per-game
+    Discord = "https://discord.gg/yourinvite",
 
-    -- ==============================
-    -- KEY SYSTEM (local validation)
-    -- ==============================
+    -- Contoh KeySystem (nonaktifkan / uncomment sesuai kebutuhan).
+    -- Jika field ini diisi, window tidak akan terbuka sebelum key valid.
+    --[[
     KeySystem = {
-        Title = "LumenHub Demo",
-        Note = "Enter the demo key to continue. (Valid keys: 1234, demo, secret)",
-        Keys = {"1234", "demo", "secret"}, -- list of valid keys
-        SaveKey = true,                   -- remember the key for next session
-        FileName = GameConfigFolder .. "/demo_key.txt", -- where to save
-        GetKeyLink = "https://example.com/get-key", -- optional link to get key
-        Validate = function(key)          -- optional custom validation
-            -- You can implement more complex logic here
-            return key == "custom"        -- e.g., allow "custom" as well
-        end,
+        Title = "LumenHub Key System",
+        Note = "Masukkan key kamu di bawah ini untuk melanjutkan.",
+        SaveKey = true,
+        GetKeyLink = "https://linkvertise.com/yourlink",
+        Keys = { "TESTKEY123", "FREEACCESS" },
+        Color = Color3.fromRGB(120, 190, 255),
         OnFail = function(key)
-            print("Invalid key attempt:", key)
+            print("Key gagal:", key)
         end,
-        -- Uncomment to use Junkie API instead (requires configuration):
+
+        -- Alternatif: pakai whitelist service Junkie
         -- Junkie = {
-        --     service = "your_service",
-        --     identifier = "your_identifier",
-        --     provider = "your_provider" -- optional
-        -- }
+        --     service = "your-service-id",
+        --     provider = "your-provider",
+        --     identifier = game.PlaceId,
+        -- },
     },
+    ]]
 })
 
--- ==============================
--- 2. NOTIFICATION FUNCTION (for later use)
--- ==============================
-local function showNotify(title, desc, color, delay)
-    Lumen:MakeNotify({
-        Title = title or "LumenHub",
-        Description = desc or "Notification",
-        Content = desc or "Notification",
-        Color = color or Color3.fromRGB(255, 255, 255),
-        Delay = delay or 4
-    })
+if not Window then
+    -- Window nil berarti KeySystem gagal / user tidak lolos verifikasi
+    return
 end
 
--- ==============================
--- 3. TABS AND SECTIONS
--- ==============================
+----------------------------------------------------------------
+-- 3) INFO TAB (built-in helper: banner + discord card + custom cards)
+----------------------------------------------------------------
+Window:InfoTab({
+    Name = "Home",
+    Icon = "house",
+    SectionTitle = "Welcome",
+    Banner = "", -- isi assetid banner kalau ada, kosongkan untuk gradient default
+    Version = "v1.0.0",
+    BannerAspectRatio = 16 / 5,
 
--- ------------------------------
--- Tab 1: Main (Basic Controls)
--- ------------------------------
-local mainTab = Window:AddTab({
-    Name = "Main",
-    Icon = "home"
-})
+    DiscordLink = "https://discord.gg/yourinvite",
+    DiscordName = "Join Our Community",
+    DiscordText = "Support, updates, dan pengumuman.",
+    DiscordDesc = "Klik tombol untuk copy invite link.",
 
-local basicSection = mainTab:AddSection("Basic Controls", true)
-
--- Paragraph
-basicSection:AddParagraph({
-    Title = "Welcome to LumenHub!",
-    Content = "This demo shows every UI component available.\nFeel free to interact and explore.",
-    Icon = "smile"
-})
-
--- Toggle (with save)
-local demoToggle = basicSection:AddToggle({
-    Title = "Enable Feature",
-    Title2 = "Subtitle",
-    Content = "This toggle saves its state automatically.",
-    Default = true,
-    Callback = function(value)
-        print("Toggle changed to:", value)
-        showNotify("Toggle", "New value: " .. tostring(value), Color3.fromRGB(0, 255, 100))
-    end
-})
-
--- Slider
-local demoSilder = basicSection:AddSlider({
-    Title = "Volume",
-    Content = "Adjust volume level (0-100)",
-    Min = 0,
-    Max = 100,
-    Default = 75,
-    Increment = 1,
-    Callback = function(value)
-        print("Volume set to:", value)
-    end
-})
-
--- Input
-local demoInput = basicSection:AddInput({
-    Title = "Username",
-    Content = "Enter your name (saved)",
-    Placeholder = "Type here...",
-    Default = "Player",
-    Callback = function(text)
-        print("Username:", text)
-    end
-})
-
--- Button with sub-button
-basicSection:AddButton({
-    Title = "Click Me",
-    SubTitle = "Reset All",
-    Callback = function()
-        print("Button clicked!")
-        demoInput:Set("Reset")
-        demoToggle:Set(false)
-        demoSilder:Set(50)
-        showNotify("Action", "Reset performed!", Color3.fromRGB(255, 200, 0))
-    end,
-    SubCallback = function()
-        print("Reset clicked!")
-        demoToggle:Set(true)
-        demoSilder:Set(75)
-        demoInput:Set("Player")
-        showNotify("Reset", "All values restored.", Color3.fromRGB(0, 200, 255))
-    end
-})
-
--- Panel (with input and two buttons)
-local panel = basicSection:AddPanel({
-    Title = "Quick Action",
-    Content = "Type a message and press Send",
-    Placeholder = "Your message...",
-    Default = "Hello",
-    ButtonText = "Send",
-    ButtonCallback = function(text)
-        print("Sent:", text)
-        showNotify("Sent", text, Color3.fromRGB(100, 200, 255))
-    end,
-    SubButtonText = "Clear",
-    SubButtonCallback = function()
-        panel:Set("")
-        showNotify("Cleared", "Input cleared.")
-    end,
-    Save = false -- don't save this panel's value
-})
-
--- Keybind (single)
-local keybindSingle = basicSection:AddKeybind({
-    Title = "Single Keybind",
-    Content = "Press to bind a key (e.g., F)",
-    Default = Enum.KeyCode.F,
-    Callback = function(key)
-        print("Key pressed:", key.Name)
-        showNotify("Keybind", "Pressed: " .. key.Name)
-    end
-})
-
--- Keybind2 (dual)
-local keybindDual = basicSection:AddKeybind2({
-    Title = "Dual Keybinds",
-    Content = "Slot 1 and Slot 2",
-    Slots = {
-        { Title = "1", Key = Enum.KeyCode.Q },
-        { Title = "2", Key = Enum.KeyCode.E }
-    },
-    Callback = function(slot, key)
-        print("Slot", slot, "pressed:", key.Name)
-        showNotify("Keybind "..slot, key.Name)
-    end
-})
-
--- Notification button (manual)
-basicSection:AddButton({
-    Title = "Show Notification",
-    Callback = function()
-        showNotify("Custom Notification", "This is a manual notification.", Color3.fromRGB(255, 100, 255))
-    end
-})
-
--- ------------------------------
--- Tab 2: Advanced Elements
--- ------------------------------
-local advTab = Window:AddTab({
-    Name = "Advanced",
-    Icon = "settings"
-})
-
-local advSection = advTab:AddSection("Dropdowns & Color", true)
-
--- Dropdown (single)
-local dropdownSingle = advSection:AddDropdown({
-    Title = "Select Option",
-    Content = "Choose one from the list",
-    Options = {"Option A", "Option B", "Option C"},
-    Default = "Option A",
-    Callback = function(value)
-        print("Dropdown selected:", value)
-    end
-})
-
--- Dropdown (multi)
-local dropdownMulti = advSection:AddDropdown({
-    Title = "Multi-Select",
-    Content = "Pick multiple items",
-    Multi = true,
-    Options = {"Apple", "Banana", "Cherry", "Date"},
-    Default = {"Apple", "Cherry"},
-    Callback = function(values)
-        print("Multi selection:", table.concat(values, ", "))
-    end
-})
-
--- Dynamic dropdown manipulation
-advSection:AddButton({
-    Title = "Add Option",
-    SubTitle = "Clear All",
-    Callback = function()
-        dropdownSingle:AddOption("New Option")
-        showNotify("Added", "New option added to dropdown.")
-    end,
-    SubCallback = function()
-        dropdownSingle:Clear()
-        dropdownSingle:AddOption("Option A")
-        dropdownSingle:AddOption("Option B")
-        dropdownSingle:AddOption("Option C")
-        showNotify("Cleared", "Dropdown reset.")
-    end
-})
-
--- Color Picker (with default palette)
-local colorPicker = advSection:AddColorPicker({
-    Title = "Pick a Color",
-    Content = "Choose an accent color",
-    Default = Color3.fromRGB(255, 100, 100),
-    Callback = function(color)
-        print("Color selected:", color.R, color.G, color.B)
-    end
-})
-
--- Color Picker with custom palette
-advSection:AddColorPicker({
-    Title = "Custom Palette",
-    Content = "Limited color set",
-    Default = Color3.fromRGB(0, 255, 0),
-    Colors = {
-        Color3.fromRGB(255,0,0),
-        Color3.fromRGB(0,255,0),
-        Color3.fromRGB(0,0,255),
-        Color3.fromRGB(255,255,0),
-        Color3.fromRGB(255,0,255),
-        Color3.fromRGB(0,255,255)
-    },
-    Callback = function(color) 
-        print("Custom color picked:", color.R, color.G, color.B)
-    end
-})
-
--- ------------------------------
--- Tab 3: Layout & Containers
--- ------------------------------
-local layoutTab = Window:AddTab({
-    Name = "Layout",
-    Icon = "layout"
-})
-
-local stackSection = layoutTab:AddSection("Stacks & Cards", true)
-
--- Horizontal Stack (HStack)
-local hstack = stackSection:AddHStack({
-    Padding = 10,
-    Sizing = "Equal",    -- "Equal" or "Auto"
-    EqualHeight = true,
-    Height = 60
-})
-hstack:AddButton({
-    Title = "Btn 1",
-    Callback = function() print("Btn1") end
-})
-hstack:AddButton({
-    Title = "Btn 2",
-    Callback = function() print("Btn2") end
-})
-hstack:AddButton({
-    Title = "Btn 3",
-    Callback = function() print("Btn3") end
-})
-
--- Vertical Stack (VStack)
-local vstack = stackSection:AddVStack({
-    Padding = 5,
-    HorizontalAlignment = Enum.HorizontalAlignment.Center
-})
-vstack:AddButton({
-    Title = "Top Button",
-    Callback = function() print("Top") end
-})
-vstack:AddButton({
-    Title = "Middle Button",
-    Callback = function() print("Middle") end
-})
-vstack:AddButton({
-    Title = "Bottom Button",
-    Callback = function() print("Bottom") end
-})
-
--- Card
-stackSection:AddCard({
-    Title = "Sample Card",
-    Description = "This card has a logo and action buttons.",
-    Logo = "heart",
-    Buttons = {
-        { Name = "Like", Callback = function() 
-            print("Liked!")
-            showNotify("Card", "You liked this card.", Color3.fromRGB(255, 50, 50))
-        end },
-        { Name = "Share", Callback = function() 
-            print("Shared!")
-            showNotify("Card", "Shared!", Color3.fromRGB(50, 255, 50))
-        end }
-    }
-})
-
--- Card Widget (image from asset or web)
-stackSection:AddCardWidget({
-    Image = "rbxassetid://1234567890", -- replace with actual asset ID or web URL
-    AspectRatio = 16/5,
-    Link = "https://example.com",
-    Callback = function() 
-        print("Card Widget clicked")
-        showNotify("Widget", "You clicked the card widget.")
-    end
-})
-
--- Divider
-stackSection:AddDivider()
-
--- SubSection
-local sub = stackSection:AddSubSection("Subsection Example")
-sub:AddParagraph({
-    Title = "Inside Subsection",
-    Content = "This is a nested subsection with smaller heading."
-})
-
--- Space (spacer)
-stackSection:AddSpace({ Height = 10, Width = 0 }) -- vertical spacer
-
--- Banner (with version pill)
-stackSection:AddBanner({
-    Image = "rbxassetid://9876543210", -- replace with actual asset ID or web URL
-    Version = "v2.0.1",
-    AspectRatio = 16/5
-})
-
--- ------------------------------
--- Tab 4: Config Management
--- ------------------------------
-local configTab = Window:AddTab({
-    Name = "Config",
-    Icon = "save"
-})
-
-local configSection = configTab:AddSection("Configuration", true)
-configSection:AddConfig({
-    -- This adds the full config management UI:
-    -- - Name input, Save/Load/Delete/Refresh buttons
-    -- - Auto-Save toggle, Auto-Load toggle
-    -- - Import/Export JSON
-})
-
--- ------------------------------
--- Tab 5: Preset Manager
--- ------------------------------
-local presetTab = Window:AddTab({
-    Name = "Presets",
-    Icon = "folder"
-})
-
-local presetSection = presetTab:AddSection("Preset Manager", true)
-local presetManager = presetSection:AddPresetManager({
-    Title = "Avatar Presets",
-    Content = "Save/load preset values (e.g., character settings).",
-    Placeholder = "Preset name...",
-    Default = "Default",
-    Callback = function(value)
-        print("Preset value changed to:", value)
-        showNotify("Preset", "Value: " .. value)
-    end,
-    -- Pre-populated presets
-    Presets = {
-        ["Warrior"] = "Strength build",
-        ["Mage"] = "Intelligence build",
-        ["Archer"] = "Dexterity build"
-    }
-})
-
-presetSection:AddButton({
-    Title = "Apply 'Warrior'",
-    Callback = function()
-        presetManager:Set("Warrior")
-    end
-})
-
-presetSection:AddButton({
-    Title = "Apply 'Mage'",
-    Callback = function()
-        presetManager:Set("Mage")
-    end
-})
-
--- ------------------------------
--- Tab 6: Target Selector
--- ------------------------------
-local targetTab = Window:AddTab({
-    Name = "Target",
-    Icon = "crosshair"
-})
-
-local targetSection = targetTab:AddSection("Target Selector", true)
-targetSection:AddParagraph({
-    Title = "Target Selector",
-    Content = "Click the button below to open a floating target panel.\nThe selected target is also reflected in a dropdown."
-})
-
--- Target Selector (combines dropdown + floating panel)
-local targetSelector = targetSection:AddTargetSelector({
-    Title = "SELECT TARGET",
-    DropdownTitle = "Target Type",
-    Options = {"KILLER", "SURVIVOR", "ZOMBIE", "BOSS"},
-    Default = "SURVIVOR",
-    Callback = function(value)
-        print("Target selected:", value)
-        showNotify("Target", value)
-    end
-})
-
--- ------------------------------
--- Tab 7: Info Tab (built-in)
--- ------------------------------
-local infoTab, infoItems = Window:InfoTab({
-    Name = "Info",
-    Icon = "info",
-    SectionTitle = "About LumenHub",
-    Banner = "rbxassetid://1234567890", -- replace with actual asset
-    Version = "v2.0",
-    DiscordLink = "https://discord.gg/example",
-    DiscordText = "Join our community for support and updates!",
     Cards = {
         {
-            Title = "Documentation",
-            Description = "Full API reference and examples available online.",
-            Logo = "book",
+            Title = "Cara Pakai",
+            Description = "Jelajahi setiap tab di sebelah kiri untuk melihat semua komponen UI yang tersedia di library ini.",
+            Logo = "book-open",
             Buttons = {
-                { Name = "Open", Callback = function() 
-                    print("Opening docs...")
-                    showNotify("Docs", "Documentation link copied to clipboard.")
-                end }
-            }
+                { Name = "Mengerti", Callback = function()
+                    Lumen:MakeNotify({
+                        Title = "LumenHub",
+                        Content = "Selamat menjelajah!",
+                        Color = Color3.fromRGB(120, 190, 255),
+                    })
+                end },
+            },
         },
         {
-            Title = "Credits",
-            Description = "LumenHub is created by Lumen Development.",
-            Logo = "star"
-        }
+            Title = "Changelog",
+            Description = "• Rilis awal example ultimate\n• Menampilkan semua komponen UI",
+            Logo = "scroll-text",
+        },
     },
+
     CardsWidget = {
-        {
-            Image = "rbxassetid://9876543210",
-            AspectRatio = 16/5,
-            Link = "https://example.com",
-            Callback = function() print("Widget clicked") end
-        }
-    }
+        -- { catwidget = "rbxassetid://0000000000", AspectRatio = 1000/300 },
+    },
 })
 
--- ==============================
--- 4. PROGRAMMATIC CONTROL EXAMPLES
--- ==============================
--- You can access elements and modify them later:
-print("Initial toggle value:", demoToggle.Value)
-demoToggle:Set(false) -- triggers callback
+----------------------------------------------------------------
+-- 4) TAB: COMPONENTS — semua basic Items
+----------------------------------------------------------------
+local ComponentsTab = Window:AddTab({ Name = "Components", Icon = "layout-grid" })
 
-print("Slider value:", demoSilder.Value)
-demoSilder:Set(80)
+-- Section biasa (collapsible, default tertutup)
+local SecToggle = ComponentsTab:AddSection("Toggles")
+SecToggle:AddToggle({
+    Title = "Basic Toggle",
+    Content = "Toggle sederhana tanpa subtitle",
+    Default = false,
+    Callback = function(value)
+        print("Basic Toggle:", value)
+    end,
+})
+SecToggle:AddToggle({
+    Title = "Toggle With Subtitle",
+    Title2 = "Subtitle di bawah judul",
+    Content = "Toggle ini punya baris Title2 tambahan dan deskripsi panjang yang otomatis wrap ketika melebihi lebar panel.",
+    Default = true,
+    Callback = function(value)
+        print("Toggle w/ Subtitle:", value)
+    end,
+})
+SecToggle:AddToggle({
+    Title = "Toggle Tanpa Save",
+    Content = "Save = false, tidak ikut tersimpan ke config",
+    Default = false,
+    Save = false,
+    Callback = function(value) end,
+})
 
--- Export/Import config (JSON)
-local exported = Window:ExportConfig()
-print("Exported config:", exported)
+local SecSlider = ComponentsTab:AddSection("Sliders")
+SecSlider:AddSlider({
+    Title = "Integer Slider",
+    Content = "Increment 1, range 0-100",
+    Min = 0,
+    Max = 100,
+    Default = 50,
+    Increment = 1,
+    Callback = function(value)
+        print("Integer Slider:", value)
+    end,
+})
+SecSlider:AddSlider({
+    Title = "Decimal Slider (Live)",
+    Content = "Live = true, callback dipanggil terus saat drag",
+    Min = 0,
+    Max = 1,
+    Default = 0.5,
+    Increment = 0.01,
+    Live = true,
+    Callback = function(value)
+        print("Decimal Slider:", value)
+    end,
+})
+SecSlider:AddSlider({
+    Title = "FOV Slider",
+    Content = "Contoh range custom 20 - 120",
+    Min = 20,
+    Max = 120,
+    Default = 90,
+    Increment = 1,
+    Callback = function(value) end,
+})
 
--- To import a config, use: Window:ImportConfig(json_string)
+local SecDropdown = ComponentsTab:AddSection("Dropdowns")
+local SingleDrop = SecDropdown:AddDropdown({
+    Title = "Single Select",
+    Content = "Pilih salah satu opsi",
+    Multi = false,
+    Options = { "Opsi A", "Opsi B", "Opsi C", "Opsi D" },
+    Default = "Opsi A",
+    Callback = function(value)
+        print("Single Dropdown:", value)
+    end,
+})
+local MultiDrop = SecDropdown:AddDropdown({
+    Title = "Multi Select",
+    Content = "Bisa pilih lebih dari satu",
+    Multi = true,
+    Options = { "Player", "NPC", "Enemy", "Item", "Zombie" },
+    Default = { "Player", "Enemy" },
+    Callback = function(values)
+        print("Multi Dropdown:", table.concat(values, ", "))
+    end,
+})
+SecDropdown:AddButton({
+    Title = "Refresh Opsi (SetValues)",
+    Callback = function()
+        SingleDrop:SetValues({ "Baru 1", "Baru 2", "Baru 3" }, "Baru 1")
+        Lumen:MakeNotify({ Title = "Dropdown", Content = "Opsi diganti secara dinamis" })
+    end,
+})
+SecDropdown:AddButton({
+    Title = "Clear Multi Dropdown",
+    Callback = function()
+        MultiDrop:Clear()
+    end,
+})
 
--- ==============================
--- 5. CLOSE / DESTROY UI (optional)
--- ==============================
--- If you need to destroy the UI programmatically:
--- Window:DestroyGui()
+local SecColor = ComponentsTab:AddSection("Color Pickers")
+SecColor:AddColorPicker({
+    Title = "Highlight Color",
+    Content = "Klik kotak warna untuk membuka palette (SV box + Hue + Hex/RGB)",
+    Default = Color3.fromRGB(255, 60, 60),
+    Callback = function(color)
+        print("ColorPicker:", color)
+    end,
+})
+SecColor:AddColorPicker({
+    Title = "ESP Color",
+    Default = Color3.fromRGB(60, 255, 120),
+    Callback = function(color) end,
+})
 
-print("LumenHub Complete Demo loaded successfully!")
-print("Press Ctrl+Shift+F or Ctrl+O to search.")
+local SecInput = ComponentsTab:AddSection("Inputs")
+SecInput:AddInput({
+    Title = "Webhook URL",
+    Content = "Contoh input text panjang",
+    Placeholder = "https://discord.com/api/webhooks/...",
+    Default = "",
+    Callback = function(text)
+        print("Input Webhook:", text)
+    end,
+})
+SecInput:AddInput({
+    Title = "Player Name",
+    Placeholder = "Masukkan username...",
+    Callback = function(text) end,
+})
+
+local SecKeybind = ComponentsTab:AddSection("Keybinds")
+SecKeybind:AddKeybind({
+    Title = "Toggle UI Key",
+    Content = "Klik tombol lalu tekan key baru",
+    Default = Enum.KeyCode.RightShift,
+    Callback = function(key)
+        print("Keybind ditekan:", key)
+    end,
+})
+SecKeybind:AddKeybind2({
+    Title = "Combo Key (2 slot)",
+    Content = "Mendukung 2 keybind sekaligus dalam satu baris",
+    Slots = {
+        { Title = "1", Key = Enum.KeyCode.E },
+        { Title = "2", Key = Enum.KeyCode.Q },
+    },
+    Callback = function(slot, key)
+        print("Keybind2 slot", slot, "ditekan:", key)
+    end,
+})
+
+local SecButton = ComponentsTab:AddSection("Buttons")
+SecButton:AddButton({
+    Title = "Single Button",
+    Callback = function()
+        Lumen:MakeNotify({ Title = "Button", Content = "Single button diklik" })
+    end,
+})
+SecButton:AddButton({
+    Title = "Main Action",
+    SubTitle = "Secondary Action",
+    Callback = function()
+        print("Main action")
+    end,
+    SubCallback = function()
+        print("Sub action")
+    end,
+})
+
+local SecPanel = ComponentsTab:AddSection("Panels")
+SecPanel:AddPanel({
+    Title = "Quick Panel",
+    Content = "Panel dengan input + 1 tombol",
+    Placeholder = "Ketik sesuatu...",
+    Default = "",
+    Button = "Kirim",
+    Callback = function(text)
+        print("Panel Kirim:", text)
+    end,
+})
+SecPanel:AddPanel({
+    Title = "Panel Dual Button",
+    Content = "Panel dengan input + 2 tombol",
+    Placeholder = "Value...",
+    Button = "Simpan",
+    SubButton = "Reset",
+    Callback = function(text)
+        print("Panel Simpan:", text)
+    end,
+    SubCallback = function(text)
+        print("Panel Reset diklik")
+    end,
+})
+
+local SecParagraph = ComponentsTab:AddSection("Paragraphs", false) -- AlwaysOpen = false (terbuka & tanpa arrow toggle)
+local ParaFunc = SecParagraph:AddParagraph({
+    Title = "Info Section",
+    Content = "Ini adalah paragraph biasa untuk menampilkan teks panjang, cocok untuk changelog, disclaimer, atau instruksi.",
+    Icon = "info",
+})
+SecParagraph:AddButton({
+    Title = "Update Paragraph Text",
+    Callback = function()
+        ParaFunc:SetContent("Teks paragraph berhasil diupdate secara dinamis via :SetContent()!")
+    end,
+})
+
+----------------------------------------------------------------
+-- 5) TAB: LAYOUT — komponen layout & dekorasi
+----------------------------------------------------------------
+local LayoutTab = Window:AddTab({ Name = "Layout", Icon = "layers" })
+
+local SecLayout = LayoutTab:AddSection("Layout Helpers", true) -- AlwaysOpen = true (tanpa header, selalu terbuka)
+SecLayout:AddSubSection("Sub Section Header")
+SecLayout:AddToggle({ Title = "Contoh Toggle di dalam AlwaysOpen Section", Default = false })
+SecLayout:AddDivider()
+SecLayout:AddSpace({ Height = 10 })
+
+local HRow = SecLayout:AddHStack({ Padding = 8, EqualHeight = true })
+HRow:AddButton({ Title = "Kiri", Callback = function() print("HStack kiri") end })
+HRow:AddButton({ Title = "Tengah", Callback = function() print("HStack tengah") end })
+HRow:AddButton({ Title = "Kanan", Callback = function() print("HStack kanan") end })
+
+SecLayout:AddDivider()
+
+local VCol = SecLayout:AddVStack({ Padding = 4 })
+VCol:AddToggle({ Title = "VStack Toggle 1", Default = false })
+VCol:AddToggle({ Title = "VStack Toggle 2", Default = true })
+VCol:AddSlider({ Title = "VStack Slider", Min = 0, Max = 10, Default = 5 })
+
+local SecCards = LayoutTab:AddSection("Cards & Widgets")
+SecCards:AddCard({
+    Title = "Card Tanpa Logo",
+    Description = "Card sederhana tanpa logo dan tombol.",
+})
+SecCards:AddCard({
+    Title = "Card Dengan Logo & Tombol",
+    Description = "Card lengkap dengan logo icon dan dua tombol aksi.",
+    Logo = "star",
+    Buttons = {
+        { Name = "Aksi 1", Callback = function() print("Card aksi 1") end },
+        { Name = "Aksi 2", Callback = function() print("Card aksi 2") end },
+    },
+})
+SecCards:AddBanner({
+    -- Image = "rbxassetid://0000000000", -- kosongkan untuk gradient default
+    Version = "v1.0.0",
+    AspectRatio = 16 / 5,
+})
+-- SecCards:AddCardWidget({ catwidget = "https://example.com/image.png" })
+-- SecCards:AddCardsWidget({ { catwidget = "..." }, { catwidget = "..." } })
+
+----------------------------------------------------------------
+-- 6) TAB: TARGET SELECTOR (floating panel terpisah)
+----------------------------------------------------------------
+local TargetTab = Window:AddTab({ Name = "Target", Icon = "crosshair" })
+local SecTarget = TargetTab:AddSection("Target Selector", true)
+
+-- Cara 1: manual, panggil Lumen:TargetSelector langsung (floating window sendiri)
+local ManualSelector = Lumen:TargetSelector({
+    Title = "SELECT TARGET",
+    Options = { "PLAYER", "NPC", "ZOMBIE" },
+    Default = "PLAYER",
+    Accent = Color3.fromRGB(120, 190, 255),
+    MaxColumns = 3,
+    Callback = function(value)
+        print("Target dipilih:", value)
+    end,
+})
+SecTarget:AddButton({
+    Title = "Buka/Tutup Target Panel",
+    Callback = function()
+        ManualSelector:Toggle()
+    end,
+})
+
+-- Cara 2: helper AddTargetSelector (otomatis bikin dropdown + panel + tombol)
+SecTarget:AddDivider()
+SecTarget:AddTargetSelector({
+    Title = "SELECT TARGET (Helper)",
+    DropdownTitle = "Target Type",
+    ButtonTitle = "Buka Panel Target",
+    Options = { "KILLER", "SURVIVOR", "ZOMBIE" },
+    Default = "SURVIVOR",
+    Callback = function(value)
+        print("Target (helper) dipilih:", value)
+    end,
+})
+
+----------------------------------------------------------------
+-- 7) TAB: PRESETS — Preset Manager
+----------------------------------------------------------------
+local PresetTab = Window:AddTab({ Name = "Presets", Icon = "save" })
+local SecPreset = PresetTab:AddSection("Preset Manager", true)
+SecPreset:AddPresetManager({
+    Title = "Value Presets",
+    Content = "Simpan & muat kumpulan value dengan nama custom",
+    Placeholder = "Masukkan value di sini...",
+    Default = "",
+    Callback = function(value)
+        print("Preset value aktif:", value)
+    end,
+})
+
+----------------------------------------------------------------
+-- 8) TAB: NOTIFICATIONS — demo Lumen:MakeNotify
+----------------------------------------------------------------
+local NotifyTab = Window:AddTab({ Name = "Notify", Icon = "bell" })
+local SecNotify = NotifyTab:AddSection("Notifications", true)
+
+SecNotify:AddButton({
+    Title = "Notify Sukses",
+    Callback = function()
+        Lumen:MakeNotify({
+            Title = "Berhasil",
+            Content = "Aksi berhasil dijalankan.",
+            Color = Color3.fromRGB(90, 220, 130),
+            Delay = 4,
+        })
+    end,
+})
+SecNotify:AddButton({
+    Title = "Notify Peringatan",
+    Callback = function()
+        Lumen:MakeNotify({
+            Title = "Peringatan",
+            Content = "Ada sesuatu yang perlu diperhatikan.",
+            Color = Color3.fromRGB(255, 170, 0),
+            Delay = 5,
+        })
+    end,
+})
+SecNotify:AddButton({
+    Title = "Notify Error",
+    Callback = function()
+        Lumen:MakeNotify({
+            Title = "Gagal",
+            Content = "Terjadi kesalahan saat memproses permintaan.",
+            Color = Color3.fromRGB(255, 90, 90),
+            Delay = 6,
+        })
+    end,
+})
+SecNotify:AddButton({
+    Title = "Notify Panjang (Auto Wrap)",
+    Callback = function()
+        Lumen:MakeNotify({
+            Title = "Info Panjang",
+            Content = "Ini adalah contoh notifikasi dengan teks yang cukup panjang untuk menunjukkan bagaimana tinggi kartu notifikasi menyesuaikan secara otomatis mengikuti panjang teks yang ditampilkan.",
+            Delay = 7,
+        })
+    end,
+})
+
+----------------------------------------------------------------
+-- 9) TAB: SETTINGS — Config manager bawaan + export/import manual
+----------------------------------------------------------------
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
+
+-- Config manager bawaan (Save As / Load / Delete / Auto Save / Auto Load / Import-Export JSON)
+local SecConfig = SettingsTab:AddSection("Config Manager", true)
+SecConfig:AddConfig({})
+
+-- Export / Import manual langsung dari Tabs (tanpa lewat item AddConfig)
+local SecManual = SettingsTab:AddSection("Manual Export / Import")
+SecManual:AddButton({
+    Title = "Export Config ke Clipboard",
+    Callback = function()
+        Window:ExportConfig()
+    end,
+})
+local ManualImportInput = SecManual:AddInput({
+    Title = "Paste Config JSON",
+    Placeholder = "{...}",
+    Save = false,
+})
+SecManual:AddButton({
+    Title = "Import Config",
+    Callback = function()
+        Window:ImportConfig(ManualImportInput:GetInput())
+    end,
+})
+
+-- Contoh Toggle/Slider tambahan yang otomatis tersimpan lewat sistem config
+local SecMisc = SettingsTab:AddSection("Misc Settings")
+SecMisc:AddToggle({
+    Title = "Auto Farm",
+    Content = "Contoh fitur yang otomatis ikut tersimpan ke config",
+    Default = false,
+    Callback = function(value) end,
+})
+SecMisc:AddSlider({
+    Title = "Walk Speed",
+    Min = 16,
+    Max = 200,
+    Default = 16,
+    Increment = 1,
+    Callback = function(value)
+        local char = game:GetService("Players").LocalPlayer.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.WalkSpeed = value
+        end
+    end,
+})
+
+----------------------------------------------------------------
+-- 10) SEARCH FEATURE
+-- Tekan Ctrl+F / Ctrl+O di dalam window untuk fokus ke search bar
+-- (otomatis aktif karena GuiConfig.Search = true).
+----------------------------------------------------------------
+
+print("[Example] LumenHub Ultimate Example berhasil dimuat sepenuhnya.")
