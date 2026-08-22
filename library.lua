@@ -39,9 +39,9 @@ local function AddStroke(gui, color, thickness, transparency)
 	s.Parent = gui
 	return s
 end
-local BOLONG_ROOT = "BolongHub"
-if not isfolder(BOLONG_ROOT) then
-	makefolder(BOLONG_ROOT)
+local LUMEN_ROOT = "LumenHub"
+if not isfolder(LUMEN_ROOT) then
+	makefolder(LUMEN_ROOT)
 end
 local placeId = game.PlaceId
 local function SanitizeConfigName(name)
@@ -65,7 +65,7 @@ local function EnsureFolderForFile(path)
 	end
 end
 local function ReadMetaFile(folder)
-	local metaPath = BOLONG_ROOT .. "/" .. folder .. "/_meta.json"
+	local metaPath = LUMEN_ROOT .. "/" .. folder .. "/_meta.json"
 	if isfile and isfile(metaPath) then
 		local ok, raw = pcall(readfile, metaPath)
 		if ok then
@@ -83,12 +83,12 @@ local function WriteMetaFile(folder, data)
 	if not writefile then
 		return
 	end
-	EnsureFolderForFile(BOLONG_ROOT .. "/" .. folder .. "/_meta.json")
+	EnsureFolderForFile(LUMEN_ROOT .. "/" .. folder .. "/_meta.json")
 	local ok, encoded = pcall(function()
 		return HttpService:JSONEncode(data)
 	end)
 	if ok then
-		pcall(writefile, BOLONG_ROOT .. "/" .. folder .. "/_meta.json", encoded)
+		pcall(writefile, LUMEN_ROOT .. "/" .. folder .. "/_meta.json", encoded)
 	end
 end
 local function FindGameFolder()
@@ -96,7 +96,7 @@ local function FindGameFolder()
 		return nil
 	end
 	for attempt = 1, 5 do
-		local ok, dirs = pcall(listfolders, BOLONG_ROOT)
+		local ok, dirs = pcall(listfolders, LUMEN_ROOT)
 		if ok and type(dirs) == "table" then
 			for _, folder in ipairs(dirs) do
 				local meta = ReadMetaFile(folder)
@@ -151,7 +151,7 @@ gameName = SanitizeConfigName(gameName)
 if gameName == "" then
 	gameName = "Unknown_Game"
 end
-GameConfigFolder = BOLONG_ROOT .. "/" .. gameName
+GameConfigFolder = LUMEN_ROOT .. "/" .. gameName
 ConfigFile = GameConfigFolder .. "/_base.json"
 ConfigData = {}
 Elements = {}
@@ -207,8 +207,8 @@ end
 local DEFAULT_CONFIG_NAME = "Default"
 local DEFAULT_CONFIG_FLAG = "DefaultConfigSaved"
 local function EnsureConfigFolder()
-	if not isfolder(BOLONG_ROOT) then
-		makefolder(BOLONG_ROOT)
+	if not isfolder(LUMEN_ROOT) then
+		makefolder(LUMEN_ROOT)
 	end
 	if not isfolder(GameConfigFolder) then
 		makefolder(GameConfigFolder)
@@ -227,7 +227,7 @@ local function EnsureDefaultConfig()
 		return HttpService:JSONEncode(snapshot)
 	end)
 	if not ok then
-		warn("[BolongUi] Gagal membuat default config:", encoded)
+		warn("[LumenUI] Gagal membuat default config:", encoded)
 		return
 	end
 	EnsureConfigFolder()
@@ -336,7 +336,7 @@ function LoadConfigElements()
 				element:Set(ConfigData[key], true)
 			end)
 			if not ok then
-				warn("[BolongUi] Gagal menerapkan config untuk elemen '" .. tostring(key) .. "': " .. tostring(err))
+				warn("[LumenUI] Gagal menerapkan config untuk elemen '" .. tostring(key) .. "': " .. tostring(err))
 			end
 		end
 	end
@@ -351,7 +351,7 @@ do
 	if ok and result then
 		Lucide = result
 	else
-		warn("[BolongUi] Gagal memuat library resmi Lucide Icons dari " .. lucide_source_url .. " -- " .. tostring(result))
+		warn("[LumenUI] Gagal memuat library resmi Lucide Icons dari " .. lucide_source_url .. " -- " .. tostring(result))
 		Lucide = nil
 	end
 end
@@ -410,14 +410,14 @@ local function ApplyIcon(imageLabel, name, size)
 		imageLabel.ImageRectOffset = asset.ImageRectOffset
 		imageLabel.ImageRectSize = asset.ImageRectSize
 	else
-		warn("[BolongUi] Ikon Lucide tidak ditemukan atau library gagal dimuat: \"" .. name .. "\"")
+		warn("[LumenUI] Ikon Lucide tidak ditemukan atau library gagal dimuat: \"" .. name .. "\"")
 		imageLabel.Image = ""
 		imageLabel.ImageRectOffset = Vector2.new(0, 0)
 		imageLabel.ImageRectSize = Vector2.new(0, 0)
 	end
 end
 local discord_logo_asset_id = "rbxassetid://95644421757953"
-local WebImageCacheFolder = "BolongHub/ImageCache"
+local WebImageCacheFolder = "LumenHub/ImageCache"
 if not isfolder(WebImageCacheFolder) then
 	makefolder(WebImageCacheFolder)
 end
@@ -511,7 +511,7 @@ local function GetWebImageAsset(url)
 	end
 	local getAsset = getcustomasset or getsynasset
 	if not (writefile and getAsset and game.HttpGet) then
-		warn("[BolongUi] Executor tidak mendukung getcustomasset/getsynasset, gambar dari url web mungkin tidak tampil.")
+		warn("[LumenUI] Executor tidak mendukung getcustomasset/getsynasset, gambar dari url web mungkin tidak tampil.")
 		return ""
 	end
 	local event = Instance.new("BindableEvent")
@@ -546,7 +546,7 @@ local function GetWebImageAsset(url)
 		if ok and res and res ~= "" then
 			result = res
 		else
-			warn("[BolongUi] Gagal memuat gambar dari url: " .. tostring(url) .. " -- " .. tostring(res))
+			warn("[LumenUI] Gagal memuat gambar dari url: " .. tostring(url) .. " -- " .. tostring(res))
 		end
 	end
 	if result ~= "" then
@@ -734,10 +734,10 @@ function CircleClick(Button, X, Y)
 		Circle:Destroy()
 	end)
 end
-local Chloex = {}
-function Chloex:MakeNotify(NotifyConfig)
+local Lumen = {}
+function Lumen:MakeNotify(NotifyConfig)
 	NotifyConfig = NotifyConfig or {}
-	NotifyConfig.Title = NotifyConfig.Title or "BolongHub"
+	NotifyConfig.Title = NotifyConfig.Title or "LumenHub"
 	NotifyConfig.Description = NotifyConfig.Description or "Notification"
 	NotifyConfig.Content = NotifyConfig.Content or "Content"
 	NotifyConfig.Color = NotifyConfig.Color or THEME.text
@@ -804,7 +804,7 @@ function Chloex:MakeNotify(NotifyConfig)
 		Title.Position = UDim2.new(0, 18, 0, 10)
 		Title.Size = UDim2.new(1, - 28, 0, 18)
 		Title.Font = THEME.fontTitle
-		Title.Text = NotifyConfig.Title or "BolongHub"
+		Title.Text = NotifyConfig.Title or "LumenHub"
 		Title.TextColor3 = THEME.text
 		Title.TextSize = 13
 		Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -886,7 +886,7 @@ function Chloex:MakeNotify(NotifyConfig)
 	end)
 end
 local TargetSelectorId = 0
-function Chloex:TargetSelector(TargetConfig)
+function Lumen:TargetSelector(TargetConfig)
 	TargetConfig = TargetConfig or {}
 	TargetConfig.Title = TargetConfig.Title or "SELECT TARGET"
 	TargetConfig.Options = TargetConfig.Options or {
@@ -1207,8 +1207,8 @@ function Chloex:TargetSelector(TargetConfig)
 	return Selector
 end
 local function than(msg, delay, color, title, desc)
-	return Chloex:MakeNotify({
-		Title = title or "BolongHub",
+	return Lumen:MakeNotify({
+		Title = title or "LumenHub",
 		Description = desc or "Notification",
 		Content = msg or "Content",
 		Color = color or Color3.fromRGB(235, 235, 235),
@@ -1217,7 +1217,7 @@ local function than(msg, delay, color, title, desc)
 end
 local function RunKeySystemGate(KeyConfig, AccentColor, ScopeName)
 	KeyConfig = KeyConfig or {}
-	KeyConfig.Title = KeyConfig.Title or "BolongHub"
+	KeyConfig.Title = KeyConfig.Title or "LumenHub"
 	KeyConfig.Note = KeyConfig.Note or "Masukkan key kamu di bawah ini untuk melanjutkan."
 	KeyConfig.SaveKey = (KeyConfig.SaveKey ~= false)
 	if not KeyConfig.FileName or KeyConfig.FileName == "" then
@@ -1324,7 +1324,7 @@ local function RunKeySystemGate(KeyConfig, AccentColor, ScopeName)
 			writefile(KeyConfig.FileName, key)
 		end)
 		if not ok then
-			warn("[BolongUi] Gagal menyimpan key ke " .. tostring(KeyConfig.FileName))
+			warn("[LumenUI] Gagal menyimpan key ke " .. tostring(KeyConfig.FileName))
 		end
 	end
 	if KeyConfig.SaveKey and isfile and isfile(KeyConfig.FileName) then
@@ -1675,7 +1675,7 @@ local function RunKeySystemGate(KeyConfig, AccentColor, ScopeName)
 		elseif err == "ERROR" then
 			than("Network error, coba lagi.", 4, orange, KeyConfig.Title, "Key System")
 		else
-			warn("[BolongUi][Junkie] Response tak dikenal: " .. tostring(err))
+			warn("[LumenUI][Junkie] Response tak dikenal: " .. tostring(err))
 			than("Key salah atau sudah tidak berlaku.", 4, red, KeyConfig.Title, "Key System")
 		end
 	end
@@ -1714,10 +1714,10 @@ local function RunKeySystemGate(KeyConfig, AccentColor, ScopeName)
 				if ok and type(result) == "table" then
 					resultValid = result.valid == true
 					resultErr = result.error
-					print("[BolongUi][Junkie] check_key(" .. tostring(key) .. ") => valid=" .. tostring(resultValid) .. " msg/err=" .. tostring(result.message or result.error))
+					print("[LumenUI][Junkie] check_key(" .. tostring(key) .. ") => valid=" .. tostring(resultValid) .. " msg/err=" .. tostring(result.message or result.error))
 				else
 					resultErr = ok and "ERROR" or tostring(result)
-					warn("[BolongUi][Junkie] check_key gagal: " .. tostring(result))
+					warn("[LumenUI][Junkie] check_key gagal: " .. tostring(result))
 				end
 			end)
 			local deadline = 0
@@ -1773,9 +1773,9 @@ local function RunKeySystemGate(KeyConfig, AccentColor, ScopeName)
 	until resolved or closedByUser
 	return resolved
 end
-function Chloex:Window(GuiConfig)
+function Lumen:Window(GuiConfig)
 	GuiConfig = GuiConfig or {}
-	GuiConfig.Title = GuiConfig.Title or "BolongHub"
+	GuiConfig.Title = GuiConfig.Title or "LumenHub"
 	GuiConfig.Image = GuiConfig.Image or "84034353458936"
 	GuiConfig.Footer = GuiConfig.Footer or ""
 	GuiConfig.Author = GuiConfig.Author or ""
@@ -1788,9 +1788,9 @@ function Chloex:Window(GuiConfig)
 	local FolderScope = SanitizeConfigName(GuiConfig.Folder)
 	GuiConfig.Folder = FolderScope
 	if FolderScope ~= "" then
-		GameConfigFolder = BOLONG_ROOT .. "/" .. gameName .. "/" .. FolderScope
+		GameConfigFolder = LUMEN_ROOT .. "/" .. gameName .. "/" .. FolderScope
 	else
-		GameConfigFolder = BOLONG_ROOT .. "/" .. gameName
+		GameConfigFolder = LUMEN_ROOT .. "/" .. gameName
 	end
 	ConfigFile = GameConfigFolder .. "/_base.json"
 	if GuiConfig.KeySystem then
@@ -1876,7 +1876,7 @@ function Chloex:Window(GuiConfig)
 	end
 	function GuiFunc:ExportConfig()
 		local payload = HttpService:JSONEncode({
-			Hub = "BolongHub",
+			Hub = "LumenHub",
 			Game = gameName,
 			PlaceId = game.PlaceId,
 			Version = CURRENT_VERSION,
@@ -1886,35 +1886,35 @@ function Chloex:Window(GuiConfig)
 		})
 		if setclipboard then
 			setclipboard(payload)
-			than("Config copied to clipboard", 4, GuiConfig.Color, "BolongHub", "Export")
+			than("Config copied to clipboard", 4, GuiConfig.Color, "LumenHub", "Export")
 		end
 		return payload
 	end
 	function GuiFunc:ImportConfig(str)
 		if not str or str == "" then
-			than("Paste a config string first", 4, Color3.fromRGB(255, 90, 90), "BolongHub", "Import")
+			than("Paste a config string first", 4, Color3.fromRGB(255, 90, 90), "LumenHub", "Import")
 			return false
 		end
 		local ok, dec = pcall(function()
 			return HttpService:JSONDecode(str)
 		end)
 		if not ok or type(dec) ~= "table" then
-			than("Invalid config format", 4, Color3.fromRGB(255, 90, 90), "BolongHub", "Import")
+			than("Invalid config format", 4, Color3.fromRGB(255, 90, 90), "LumenHub", "Import")
 			return false
 		end
 		local data = ExtractConfigPayload(dec)
 		if not data then
-			than("Config data is empty", 4, Color3.fromRGB(255, 90, 90), "BolongHub", "Import")
+			than("Config data is empty", 4, Color3.fromRGB(255, 90, 90), "LumenHub", "Import")
 			return false
 		end
 		ApplyConfigData(data)
 		QueueSaveConfig(AutoSaveEnabled)
-		than("Config imported", 4, GuiConfig.Color, "BolongHub", "Import")
+		than("Config imported", 4, GuiConfig.Color, "LumenHub", "Import")
 		return true
 	end
 	local function EnsureConfigFolder()
-		if not isfolder(BOLONG_ROOT) then
-			makefolder(BOLONG_ROOT)
+		if not isfolder(LUMEN_ROOT) then
+			makefolder(LUMEN_ROOT)
 		end
 		EnsureFolderForFile(GameConfigFolder .. "/_base.json")
 	end
@@ -1940,7 +1940,7 @@ function Chloex:Window(GuiConfig)
 	end
 	function GuiFunc:SaveConfigAs(name)
 		if not name or name == "" then
-			than("Enter a config name first", 4, Color3.fromRGB(255, 90, 90), "BolongHub", "Config")
+			than("Enter a config name first", 4, Color3.fromRGB(255, 90, 90), "LumenHub", "Config")
 			return false
 		end
 		if not writefile then
@@ -1953,12 +1953,12 @@ function Chloex:Window(GuiConfig)
 		end)
 		if not ok then
 			warn("SaveConfigAs failed to encode config:", encoded)
-			than("Failed to save config", 4, Color3.fromRGB(255, 90, 90), "BolongHub", "Config")
+			than("Failed to save config", 4, Color3.fromRGB(255, 90, 90), "LumenHub", "Config")
 			return false
 		end
 		writefile(path, encoded)
 		SetActiveConfig(name, path, nil, "saved")
-		than("Saved '" .. name .. "'", 4, GuiConfig.Color, "BolongHub", "Config")
+		than("Saved '" .. name .. "'", 4, GuiConfig.Color, "LumenHub", "Config")
 		return true
 	end
 	function GuiFunc:LoadConfigByName(name)
@@ -1967,24 +1967,24 @@ function Chloex:Window(GuiConfig)
 		end
 		local path = GameConfigFolder .. "/" .. name .. ".json"
 		if not (isfile and isfile(path)) then
-			than("Config '" .. tostring(name) .. "' not found", 4, Color3.fromRGB(255, 90, 90), "BolongHub", "Config")
+			than("Config '" .. tostring(name) .. "' not found", 4, Color3.fromRGB(255, 90, 90), "LumenHub", "Config")
 			return false
 		end
 		local ok, dec = pcall(function()
 			return HttpService:JSONDecode(readfile(path))
 		end)
 		if not ok or type(dec) ~= "table" then
-			than("Failed to read config", 4, Color3.fromRGB(255, 90, 90), "BolongHub", "Config")
+			than("Failed to read config", 4, Color3.fromRGB(255, 90, 90), "LumenHub", "Config")
 			return false
 		end
 		local data = ExtractConfigPayload(dec)
 		if not data then
-			than("Config data is empty", 4, Color3.fromRGB(255, 90, 90), "BolongHub", "Config")
+			than("Config data is empty", 4, Color3.fromRGB(255, 90, 90), "LumenHub", "Config")
 			return false
 		end
 		ApplyConfigData(data)
 		SetActiveConfig(name, path, nil, "manual")
-		than("Loaded '" .. name .. "'", 4, GuiConfig.Color, "BolongHub", "Config")
+		than("Loaded '" .. name .. "'", 4, GuiConfig.Color, "LumenHub", "Config")
 		return true
 	end
 	function GuiFunc:DeleteConfig(name)
@@ -1997,7 +1997,7 @@ function Chloex:Window(GuiConfig)
 			if GuiFunc:GetAutoLoad() == name then
 				GuiFunc:SetAutoLoad("")
 			end
-			than("Deleted '" .. name .. "'", 4, Color3.fromRGB(255, 170, 0), "BolongHub", "Config")
+			than("Deleted '" .. name .. "'", 4, Color3.fromRGB(255, 170, 0), "LumenHub", "Config")
 			return true
 		end
 		return false
@@ -2168,7 +2168,7 @@ function Chloex:Window(GuiConfig)
 		DiscordBtn.Activated:Connect(function()
 			if setclipboard then
 				setclipboard(GuiConfig.Discord)
-				than("Discord invite copied", 4, GuiConfig.Color, "BolongHub", "Community")
+				than("Discord invite copied", 4, GuiConfig.Color, "LumenHub", "Community")
 			end
 		end)
 		discordOffset = 36
@@ -2619,7 +2619,7 @@ function Chloex:Window(GuiConfig)
 		Title.Position = UDim2.new(0, 0, 0, 4)
 		Title.BackgroundTransparency = 1
 		Title.Font = Enum.Font.GothamBold
-		Title.Text = "BolongHub Window"
+		Title.Text = "LumenHub Window"
 		Title.TextSize = 22
 		Title.TextColor3 = THEME.text
 		Title.ZIndex = 52
@@ -5544,7 +5544,7 @@ function Chloex:Window(GuiConfig)
 							end
 						end,
 					})
-					Selector = Chloex:TargetSelector({
+					Selector = Lumen:TargetSelector({
 						Title = PanelTitle,
 						Options = Options,
 						Values = Values,
@@ -5650,9 +5650,9 @@ function Chloex:Window(GuiConfig)
 								return
 							end
 							if value then
-								than("Auto Save diaktifkan", 4, GuiConfig.Color, "BolongHub", "Config")
+								than("Auto Save diaktifkan", 4, GuiConfig.Color, "LumenHub", "Config")
 							else
-								than("Auto Save dimatikan", 4, Color3.fromRGB(255, 170, 0), "BolongHub", "Config")
+								than("Auto Save dimatikan", 4, Color3.fromRGB(255, 170, 0), "LumenHub", "Config")
 							end
 						end,
 					})
@@ -5670,13 +5670,13 @@ function Chloex:Window(GuiConfig)
 							end
 							if value and selectedConfig then
 								GuiFunc:SetAutoLoad(selectedConfig)
-								than("Auto load set to '" .. selectedConfig .. "'", 4, GuiConfig.Color, "BolongHub", "Config")
+								than("Auto load set to '" .. selectedConfig .. "'", 4, GuiConfig.Color, "LumenHub", "Config")
 							elseif value then
 								GuiFunc:SetAutoLoad("")
 								if AutoToggle then
 									AutoToggle:Set(false, true)
 								end
-								than("Select a config first", 4, Color3.fromRGB(255, 170, 0), "BolongHub", "Config")
+								than("Select a config first", 4, Color3.fromRGB(255, 170, 0), "LumenHub", "Config")
 							else
 								GuiFunc:SetAutoLoad("")
 							end
@@ -5885,7 +5885,7 @@ function Chloex:Window(GuiConfig)
 								if CardConfig.Link then
 									if setclipboard then
 										pcall(setclipboard, CardConfig.Link)
-										than("Link copied to clipboard", 4, GuiConfig.Color, "BolongHub", "Widget")
+										than("Link copied to clipboard", 4, GuiConfig.Color, "LumenHub", "Widget")
 									end
 								end
 							end)
@@ -6600,14 +6600,14 @@ function Chloex:Window(GuiConfig)
 					end
 					CreateBtn("Save", Color3.fromRGB(40, 40, 40), function()
 						if currentPresetName == "" or not currentPresetName then
-							than("Masukkan nama preset terlebih dahulu!", 3, Color3.fromRGB(255, 170, 0), "BolongHub", "Preset")
+							than("Masukkan nama preset terlebih dahulu!", 3, Color3.fromRGB(255, 170, 0), "LumenHub", "Preset")
 							return
 						end
 						PresetFunc.Presets[currentPresetName] = PresetFunc.Value
 						SavePresetFile()
 						RefreshDropdown()
 						PresetDropdown:Set(currentPresetName)
-						than("Preset '" .. currentPresetName .. "' disimpan!", 3, GuiConfig.Color, "BolongHub", "Preset")
+						than("Preset '" .. currentPresetName .. "' disimpan!", 3, GuiConfig.Color, "LumenHub", "Preset")
 					end)
 					CreateBtn("Delete", Color3.fromRGB(60, 25, 25), function()
 						if currentPresetName == "" or not currentPresetName then
@@ -6619,9 +6619,9 @@ function Chloex:Window(GuiConfig)
 							currentPresetName = ""
 							NameBox.Text = ""
 							RefreshDropdown()
-							than("Preset berhasil dihapus.", 3, Color3.fromRGB(255, 170, 0), "BolongHub", "Preset")
+							than("Preset berhasil dihapus.", 3, Color3.fromRGB(255, 170, 0), "LumenHub", "Preset")
 						else
-							than("Preset tidak ditemukan.", 3, Color3.fromRGB(255, 90, 90), "BolongHub", "Preset")
+							than("Preset tidak ditemukan.", 3, Color3.fromRGB(255, 90, 90), "LumenHub", "Preset")
 						end
 					end)
 					if shouldSave then
@@ -6728,7 +6728,7 @@ function Chloex:Window(GuiConfig)
 						Callback = function()
 							if setclipboard then
 								setclipboard(InfoConfig.DiscordLink)
-								than("Discord invite copied", 4, GuiConfig.Color, "BolongHub", "Community")
+								than("Discord invite copied", 4, GuiConfig.Color, "LumenHub", "Community")
 							end
 						end,
 					},
@@ -6786,4 +6786,4 @@ function Chloex:Window(GuiConfig)
 	end)
 	return Tabs
 end
-return Chloex
+return Lumen
