@@ -93,6 +93,25 @@ if not Window then
 	return
 end
 
+Window:InfoTab({
+	Name = "Info",
+	Icon = "info",
+	SectionTitle = "Welcome",
+	Version = "v1.0.0",
+ 
+	DiscordLink = "https://discord.gg/yourinvite",
+	DiscordName = "Join Our Community",
+	DiscordText = "Support, updates, dan pengumuman.",
+ 
+	Cards = {
+		{
+			Title = "VD Auto Farm",
+			Description = "Script auto farm + server hop + webhook logger. Buka tab Auto Farm untuk mulai.",
+			Logo = "zap",
+		},
+	},
+})
+
 local Tabs = {
 	AutoFarm = Window:AddTab({ Name = "Auto Farm", Icon = "zap" }),
 	Settings = Window:AddTab({ Name = "Settings", Icon = "settings" }),
