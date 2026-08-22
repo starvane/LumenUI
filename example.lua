@@ -14,7 +14,7 @@
 --
 -- Referensi struktur API tersebut ada di source UI yang kamu kirim.
 
-local SOURCE_URL = "https://raw.githubusercontent.com/starvane/LumenUI/refs/heads/main/main.lua"
+local SOURCE_URL = "https://raw.githubusercontent.com/starvane/LumenUI/refs/heads/main/library.lua"
 
 local ok, Chloex = pcall(function()
     return loadstring(game:HttpGet(SOURCE_URL))()
