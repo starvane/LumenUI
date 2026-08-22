@@ -48,7 +48,7 @@ local Window = Lumen:Window({
         --     identifier = "your_identifier",
         --     provider = "your_provider" -- optional
         -- }
-    }
+    },
 })
 
 -- ==============================
