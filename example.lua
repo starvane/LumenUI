@@ -2,7 +2,15 @@
 -- Demonstrates ALL features of the LumenHub UI library, including Key System.
 -- Run this script in a Roblox executor that supports the required functions.
 
-local Lumen = "https://raw.githubusercontent.com/starvane/LumenUI/refs/heads/main/library.lua" -- Replace with your actual loading method (loadstring, require, etc.)
+local SOURCE_URL = "https://raw.githubusercontent.com/starvane/LumenUI/refs/heads/main/library.lua" -- Replace with your actual loading method (loadstring, require, etc.)
+local ok, Lumen = pcall(function()
+    return loadstring(game:HttpGet(SOURCE_URL))()
+end)
+
+if not ok or not Lumen then
+    warn("[LumenHub] Gagal memuat LumenUI:", Chloex)
+    return
+end
 
 -- ==============================
 -- 1. CREATE THE MAIN WINDOW WITH KEY SYSTEM
