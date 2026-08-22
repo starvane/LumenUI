@@ -796,24 +796,8 @@ WebhookGroup:AddButton({
 })
 
 ----------------------------------------------------------------
--- UI: SETTINGS TAB (Menu keybind, Unload, Config manager)
+-- UI: SETTINGS TAB (Config manager)
 ----------------------------------------------------------------
-local MenuGroup = Tabs.Settings:AddSection("Menu", true)
-
--- Pengganti Library.ToggleKeybind: toggle visibility window LumenHub secara manual
-Options.MenuKeybind = MenuGroup:AddKeybind({
-	Title = "Menu Keybind",
-	Content = "Tekan untuk buka/tutup menu",
-	Default = Enum.KeyCode.RightShift,
-	Save = false, -- setara SaveManager:SetIgnoreIndexes({"MenuKeybind"})
-	Callback = function()
-		local bhub = game:GetService("CoreGui"):FindFirstChild("BHub")
-		local holder = bhub and bhub:FindFirstChild("DropShadowHolder")
-		if holder then
-			holder.Visible = not holder.Visible
-		end
-	end,
-})
 
 local ConfigGroup = Tabs.Settings:AddSection("Config", true)
 ConfigGroup:AddConfig({}) -- pengganti SaveManager:BuildConfigSection (Save As/Load/Delete/AutoSave/AutoLoad/Import-Export)
