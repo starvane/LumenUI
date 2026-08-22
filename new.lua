@@ -80,8 +80,8 @@ end
 -- WINDOW & TABS
 ----------------------------------------------------------------
 Window = Lumen:Window({
-	Title = "VD Auto Farm",
-	Footer = "version: 1.0.0",
+	Title = "OxioHub AutoFarm - Violence District",
+	Footer = "version: 1.0.0 | Status: Premium",
 	Color = Color3.fromRGB(120, 190, 255),
 	["Tab Width"] = 110,
 	Version = 1,
