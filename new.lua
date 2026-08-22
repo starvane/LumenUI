@@ -718,7 +718,7 @@ end
 -- UI: AUTO FARM SECTION
 ----------------------------------------------------------------
 Toggles.EnableAutoFarm = AutoFarmGroup:AddToggle({
-	Title = "Enable Auto Farm",
+	Title = "Survivor Farm",
 	Content = "Teleport Survivor to finish",
 	Default = false,
 })
@@ -734,7 +734,7 @@ Toggles.ServerHop = AutoFarmGroup:AddToggle({
 	end,
 })
 
-local LOADER_URL = "https://raw.githubusercontent.com/Rzor731/VD-AUTO-FARM/refs/heads/main/loader.lua"
+local LOADER_URL = "https://raw.githubusercontent.com/starvane/LumenUI/refs/heads/main/new.lua"
 local AutoExecuteQueued = false
 local function QueueAutoExec()
 	if AutoExecuteQueued or not Toggles.AutoExecute.Value then
