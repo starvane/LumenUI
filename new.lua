@@ -10,7 +10,7 @@ local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 
 -- Load LumenUI
-local UI_URL = "https://raw.githubusercontent.com/starvane/LumenUI/refs/heads/main/main.lua"
+local UI_URL = "https://raw.githubusercontent.com/starvane/LumenUI/refs/heads/main/library.lua"
 local okUI, Lumen = pcall(function()
     return loadstring(game:HttpGet(UI_URL))()
 end)
