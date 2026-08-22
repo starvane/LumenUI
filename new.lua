@@ -7,67 +7,33 @@ local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
+local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
--- Load LumenUI
-local UI_URL = "https://raw.githubusercontent.com/starvane/LumenUI/refs/heads/main/library.lua"
-local okUI, Lumen = pcall(function()
-    return loadstring(game:HttpGet(UI_URL))()
-end)
+-- ====== Muat LumenHub (ganti URL jika perlu) ======
+local Lumen = loadstring(game:HttpGet("https://raw.githubusercontent.com/starvane/LumenUI/refs/heads/main/library.lua"))()  -- sesuaikan URL
 
-if not okUI or not Lumen then
-    warn("[VD Auto Farm] Gagal load LumenUI:", Lumen)
-    return
-end
-
--- State
-local Library = { Unloaded = false }
+-- ====== State Global ======
 local Toggles = {}
 local Options = {}
-local BeatState = {
-    LastFinishPos = nil,
-    BeatSurvivorDone = false,
-    LastRole = nil,
-}
-local FinishWatchActive = false
-local ForceServerHop = false
-local IsHopping = false
-local IsRound = false
+local Unloaded = false
 
--- Helper untuk akses nilai toggle/option
-local function GetValue(element, default)
-    if not element then return default end
-    if element.Value ~= nil then return element.Value end
-    if element.Get then
-        local ok, val = pcall(element.Get, element)
-        if ok then return val end
-    end
-    return default
+-- ====== Fungsi Notifikasi (gunakan Lumen:MakeNotify) ======
+local LastNotifTime = 0
+local function Notify(title, desc, duration)
+    local now = os.clock()
+    if now - LastNotifTime < 2.5 then return end
+    LastNotifTime = now
+    Lumen:MakeNotify({
+        Title = title,
+        Description = desc,
+        Content = desc,
+        Color = Color3.fromRGB(255, 255, 255),
+        Delay = duration or 4,
+    })
 end
 
-local function ToggleValue(name)
-    return GetValue(Toggles[name], false)
-end
-
-local function OptionValue(name, default)
-    return GetValue(Options[name], default)
-end
-
--- Notifikasi
-local function Notify(title, content, duration)
-    if Library.Unloaded then return end
-    pcall(function()
-        Lumen:MakeNotify({
-            Title = title or "VD Auto Farm",
-            Content = content or "",
-            Delay = duration or 3,
-        })
-    end)
-end
-
--- ============================================
--- FUNGSI UTILITY
--- ============================================
+-- ====== Fungsi-fungsi bantu (tidak berubah) ======
 local function GetRole()
     local team = LocalPlayer.Team
     if not team then return "Unknown" end
@@ -92,20 +58,14 @@ local function ExecutorName()
     return (identifyexecutor and identifyexecutor()) or (getexecutorname and getexecutorname()) or "Unknown Executor"
 end
 
--- ============================================
--- SNAPSHOT / ATTRIBUTES
--- ============================================
+-- ====== Snapshot & Webhook (tidak berubah) ======
 local ATTR_FILE = "VD_AutoFarm_Attributes.json"
 local PrevAttrs
 
 local function LoadSnapshot()
     if not isfile or not readfile or not isfile(ATTR_FILE) then return nil end
-    local ok, data = pcall(function()
-        return HttpService:JSONDecode(readfile(ATTR_FILE))
-    end)
-    if not ok or type(data) ~= "table" or tonumber(data.UserId) ~= LocalPlayer.UserId then
-        return nil
-    end
+    local ok, data = pcall(function() return HttpService:JSONDecode(readfile(ATTR_FILE)) end)
+    if not ok or type(data) ~= "table" or tonumber(data.UserId) ~= LocalPlayer.UserId then return nil end
     return {
         KillerChance = tonumber(data.KillerChance),
         EXP = tonumber(data.EXP),
@@ -124,9 +84,7 @@ local function SaveSnapshot(attrs)
         Gears = attrs.Gears,
         UpdatedAt = os.time(),
     }
-    return pcall(function()
-        writefile(ATTR_FILE, HttpService:JSONEncode(data))
-    end)
+    return pcall(function() writefile(ATTR_FILE, HttpService:JSONEncode(data)) end)
 end
 
 local function Delta(cur, prev)
@@ -137,15 +95,12 @@ end
 
 PrevAttrs = LoadSnapshot()
 
--- ============================================
--- WEBHOOK
--- ============================================
 local function WebhookEnabled()
-    return ToggleValue("EnableWebhook")
+    return Toggles.EnableWebhook and Toggles.EnableWebhook.Value
 end
 
 local function WebhookUrl()
-    return OptionValue("WebhookLink", "")
+    return Options.WebhookLink and Options.WebhookLink.Value or ""
 end
 
 local function ValidWebhook(url)
@@ -163,7 +118,7 @@ local function SendDebug(title, desc)
             color = 16711680,
             footer = { text = "ServerHop Debug" },
             timestamp = os.date("!%Y-%m-%dT%H:%M:%S.000Z"),
-        }}
+        }},
     }
     local res = SafeReq({
         Url = url,
@@ -175,14 +130,9 @@ local function SendDebug(title, desc)
 end
 
 local function SendWebhook(title, desc, force)
-    if not force and not WebhookEnabled() then
-        return false, "Disabled"
-    end
+    if not force and not WebhookEnabled() then return false, "Disabled" end
     local url = WebhookUrl()
-    if not ValidWebhook(url) then
-        return false, "Invalid URL"
-    end
-
+    if not ValidWebhook(url) then return false, "Invalid URL" end
     local attrs = LocalPlayer:GetAttributes()
     local kc = tonumber(attrs.KillerChance) or 0
     local exp = tonumber(attrs.EXP) or 0
@@ -209,16 +159,14 @@ local function SendWebhook(title, desc, force)
             },
             footer = { text = string.format("VD Auto Farm · %s", ExecutorName()) },
             timestamp = os.date("!%Y-%m-%dT%H:%M:%S.000Z"),
-        }}
+        }},
     }
-
     local res = SafeReq({
         Url = url,
         Method = "POST",
         Headers = { ["Content-Type"] = "application/json" },
         Body = HttpService:JSONEncode(payload),
     })
-
     if res and (res.StatusCode == 200 or res.StatusCode == 204) then
         PrevAttrs = { KillerChance = kc, EXP = exp, Screws = screws, Gears = gears }
         SaveSnapshot(PrevAttrs)
@@ -227,9 +175,15 @@ local function SendWebhook(title, desc, force)
     return false, "Status: " .. tostring(res and res.StatusCode or "No Response")
 end
 
--- ============================================
--- FIND FINISH POSITION
--- ============================================
+-- ====== BeatGame & ServerHop (tidak berubah) ======
+local BeatState = {
+    LastFinishPos = nil,
+    BeatSurvivorDone = false,
+    LastRole = nil,
+}
+local FinishWatchActive = false
+local ForceServerHop = false
+
 local function FindFinish(map)
     local pos
     pcall(function()
@@ -245,31 +199,26 @@ local function FindFinish(map)
             pos = Vector3.new(760.98, -20.14, -78.48)
             return
         end
-
         local finish = map:FindFirstChild("Finishline") or map:FindFirstChild("FinishLine") or map:FindFirstChild("Fininshline")
         if finish then
-            if finish:IsA("BasePart") then
-                pos = finish.Position
+            if finish:IsA("BasePart") then pos = finish.Position
             elseif finish:IsA("Model") then
                 local p = finish:FindFirstChildWhichIsA("BasePart")
                 if p then pos = p.Position end
             end
             return
         end
-
         for _, obj in ipairs(map:GetDescendants()) do
             if obj.Name:lower():find("finish") then
-                if obj:IsA("BasePart") then
-                    pos = obj.Position
-                    break
+                if obj:IsA("BasePart") then pos = obj.Position
                 elseif obj:IsA("Model") then
                     local p = obj:FindFirstChildWhichIsA("BasePart")
-                    if p then pos = p.Position break end
+                    if p then pos = p.Position end
                 end
+                if pos then break end
             end
         end
         if pos then return end
-
         for _, obj in ipairs(map:GetDescendants()) do
             if obj:IsA("MeshPart") and obj.Material == Enum.Material.Limestone then
                 pos = Vector3.new(-947.90, 152.12, -7579.52)
@@ -277,7 +226,6 @@ local function FindFinish(map)
             end
         end
         if pos then return end
-
         for _, obj in ipairs(map:GetDescendants()) do
             if obj:IsA("MeshPart") and obj.Material == Enum.Material.Leather then
                 pos = Vector3.new(1546.12, 152.21, -796.72)
@@ -288,68 +236,40 @@ local function FindFinish(map)
     return pos
 end
 
--- ============================================
--- BEAT GAME (AUTO FARM)
--- ============================================
 local function BeatGame()
-    if not ToggleValue("EnableAutoFarm") then
+    if not Toggles.EnableAutoFarm.Value then
         BeatState.BeatSurvivorDone = false
         BeatState.LastFinishPos = nil
         return
     end
-
     local role = GetRole()
     if BeatState.LastRole ~= role then
-        if role == "Survivor" then
-            Notify("🟢 Survivor!", "Ready to farm.")
-        end
+        if role == "Survivor" then Notify("🟢 Survivor!", "Ready to farm.") end
         BeatState.LastRole = role
     end
-
     if role ~= "Survivor" then return end
 
     local root = GetRoot()
-    if not root then
-        Notify("⏳ Waiting", "Character not loaded")
-        return
-    end
+    if not root then Notify("⏳ Waiting", "Character not loaded") return end
 
     local map = Workspace:FindFirstChild("Map")
-    if not map then
-        Notify("⚠️ No Map", "Waiting for map")
-        return
-    end
+    if not map then Notify("⚠️ No Map", "Waiting for map") return end
 
     local exitPos = FindFinish(map)
-    if not exitPos then
-        Notify("⚠️ Finish Not Found", "Map unsupported")
-        return
-    end
+    if not exitPos then Notify("⚠️ Finish Not Found", "Map unsupported") return end
 
     if BeatState.LastFinishPos and (exitPos - BeatState.LastFinishPos).Magnitude > 50 then
         BeatState.BeatSurvivorDone = false
     end
-
     if BeatState.BeatSurvivorDone then return end
 
     Notify("📍 Finish Found", "Waiting 6s...")
     task.wait(6)
-
-    if not ToggleValue("EnableAutoFarm") then
-        Notify("⛔ Cancelled", "Toggle turned off")
-        return
-    end
-
-    if GetRole() ~= "Survivor" then
-        Notify("⛔ Cancelled", "Not Survivor anymore")
-        return
-    end
+    if not Toggles.EnableAutoFarm.Value then Notify("⛔ Cancelled", "Toggle turned off") return end
+    if GetRole() ~= "Survivor" then Notify("⛔ Cancelled", "Not Survivor anymore") return end
 
     local currentRoot = GetRoot()
-    if not currentRoot then
-        Notify("⛔ Cancelled", "Character missing")
-        return
-    end
+    if not currentRoot then Notify("⛔ Cancelled", "Character missing") return end
 
     Notify("🚀 Teleporting", "Moving to finish...")
     currentRoot.CFrame = CFrame.new(exitPos)
@@ -363,10 +283,7 @@ local function BeatGame()
             local start = os.clock()
             local timeout = 10
             while os.clock() - start < timeout do
-                if not ToggleValue("EnableAutoFarm") then
-                    FinishWatchActive = false
-                    return
-                end
+                if not Toggles.EnableAutoFarm.Value then FinishWatchActive = false return end
                 if GetRole() == "Spectator" then
                     FinishWatchActive = false
                     Notify("👁️ Match Completed", "Role changed to Spectator.")
@@ -376,24 +293,17 @@ local function BeatGame()
             end
             if GetRole() == "Survivor" then
                 Notify("🔴 Match Stuck", "Still Survivor after finish. Server hopping...")
-                pcall(function()
-                    SendDebug("🔴 Match Stuck", string.format("Role remained `%s` after %ds.\nServer: `%s`", tostring(GetRole()), timeout, tostring(game.JobId)))
-                end)
-                if ToggleValue("ServerHop") then
-                    ForceServerHop = true
-                end
+                pcall(function() SendDebug("🔴 Match Stuck", string.format("Role remained `%s` after %ds.\nServer: `%s`", tostring(GetRole()), timeout, tostring(game.JobId))) end)
+                if Toggles.ServerHop and Toggles.ServerHop.Value then ForceServerHop = true end
             end
             FinishWatchActive = false
         end)
     end
-
     task.wait(5)
     SendWebhook()
 end
 
--- ============================================
--- SERVER HOP (dipindah ke atas agar bisa dipanggil)
--- ============================================
+-- ServerHop
 local IGNORE_FILE = "ServerHop.txt"
 local IGNORE_CANDIDATE = 180
 local IGNORE_FAILED = 600
@@ -408,6 +318,7 @@ local TargetServer = nil
 local OriginalJob = nil
 local TeleportInProgress = false
 local TeleportFailed = false
+local IsHopping = false
 
 local function LoadIgnored()
     if not isfile or not readfile or not isfile(IGNORE_FILE) then return {} end
@@ -418,9 +329,7 @@ local function LoadIgnored()
     for _, line in ipairs(content:split("\n")) do
         local id, exp = line:match("^([^|]+)|(%d+)$")
         exp = tonumber(exp)
-        if id and id ~= "" and exp and now < exp then
-            list[id] = exp
-        end
+        if id and id ~= "" and exp and now < exp then list[id] = exp end
     end
     return list
 end
@@ -430,9 +339,7 @@ local function SaveIgnored(list)
     local now = os.time()
     local lines = {}
     for id, exp in pairs(list) do
-        if id and exp and now < exp then
-            table.insert(lines, id .. "|" .. exp)
-        end
+        if id and exp and now < exp then table.insert(lines, id .. "|" .. exp) end
     end
     pcall(function() writefile(IGNORE_FILE, table.concat(lines, "\n")) end)
 end
@@ -454,7 +361,7 @@ local function IsIgnored(id)
     return true
 end
 
--- Remote events
+local IsRound = false
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local StatusEvent = Remotes:WaitForChild("StatusUpdateEvent")
 local TimeEvent = Remotes:WaitForChild("TimeUpdateEvent")
@@ -465,7 +372,6 @@ StatusEvent.OnClientEvent:Connect(function(s)
         BeatState.BeatSurvivorDone = false
     end
 end)
-
 TimeEvent.OnClientEvent:Connect(function(s)
     if s == "Round" then IsRound = true end
 end)
@@ -497,9 +403,7 @@ TeleportService.TeleportInitFailed:Connect(function(player, result, err)
     if id then
         AddIgnored(id, IGNORE_FAILED)
         Notify("❌ Teleport Failed", string.format("Server %s blacklisted 10m", id:sub(1, 8)))
-        pcall(function()
-            SendDebug("🐛 Teleport Failed", string.format("Server: `%s`\nCode: `%s`\nError: `%s`", id, tostring(result), tostring(err)))
-        end)
+        pcall(function() SendDebug("🐛 Teleport Failed", string.format("Server: `%s`\nCode: `%s`\nError: `%s`", id, tostring(result), tostring(err))) end)
     end
 end)
 
@@ -512,9 +416,7 @@ local function DoTeleport(id)
         TeleportInProgress = false
         AddIgnored(id, IGNORE_FAILED)
         Notify("❌ Teleport Error", "Call failed, retrying later")
-        pcall(function()
-            SendDebug("🐛 Teleport Call Failed", string.format("Server: `%s`\nError: `%s`", id, tostring(err)))
-        end)
+        pcall(function() SendDebug("🐛 Teleport Call Failed", string.format("Server: `%s`\nError: `%s`", id, tostring(err))) end)
         ResetTeleportState()
         return false
     end
@@ -532,37 +434,23 @@ local function WaitTeleport()
     return "Timeout"
 end
 
--- Fungsi ServerHop (sekarang didefinisikan sebelum dipakai)
-local function ServerHop()
+ServerHop = function()
     if IsHopping then return end
     IsHopping = true
-
     IgnoredServers = LoadIgnored()
     ResetTeleportState()
-
     local cursor = ""
     local apiFails = 0
-
-    while ToggleValue("ServerHop") and not Library.Unloaded do
+    while Toggles.ServerHop and Toggles.ServerHop.Value and not Unloaded do
         local forced = ForceServerHop
         ForceServerHop = false
-
         if not forced and not CanHop() then
             ResetTeleportState()
             task.wait(0.5)
-            goto continue
+            continue
         end
-
-        local url = string.format(
-            "https://games.roblox.com/v1/games/%s/servers/Public?limit=100&sortOrder=Asc&excludeFullGames=true&cursor=%s",
-            game.PlaceId,
-            HttpService:UrlEncode(cursor)
-        )
-
-        local ok, res = pcall(function()
-            return HttpService:JSONDecode(game:HttpGet(url))
-        end)
-
+        local url = string.format("https://games.roblox.com/v1/games/%s/servers/Public?limit=100&sortOrder=Asc&excludeFullGames=true&cursor=%s", game.PlaceId, HttpService:UrlEncode(cursor))
+        local ok, res = pcall(function() return HttpService:JSONDecode(game:HttpGet(url)) end)
         if not ok or not res or type(res.data) ~= "table" then
             apiFails = apiFails + 1
             if apiFails >= 5 then
@@ -571,17 +459,14 @@ local function ServerHop()
                 pcall(function() SendDebug("API Error", "Reset pagination after 5 failures") end)
             end
             task.wait(API_RETRY)
-            goto continue
+            continue
         end
-
         apiFails = 0
         local curJob = game.JobId
         local found = false
-
         for _, srv in ipairs(res.data) do
-            if not ToggleValue("ServerHop") or Library.Unloaded then break end
+            if not Toggles.ServerHop.Value or Unloaded then break end
             if not forced and not CanHop() then break end
-
             if srv.id and srv.id ~= curJob and srv.playing == 2 and not IsIgnored(srv.id) then
                 found = true
                 local id = srv.id
@@ -589,12 +474,10 @@ local function ServerHop()
                 AddIgnored(id, IGNORE_CANDIDATE)
                 Notify("📡 Teleporting", string.format("%d player | %s", count, id:sub(1, 8)))
                 task.wait(2)
-
                 if not DoTeleport(id) then
                     task.wait(TELEPORT_RETRY_WAIT)
-                    goto continue
+                    continue
                 end
-
                 local result = WaitTeleport()
                 if result == "Success" then
                     ResetTeleportState()
@@ -603,25 +486,19 @@ local function ServerHop()
                 elseif result == "Failed" then
                     ResetTeleportState()
                     task.wait(TELEPORT_RETRY_WAIT)
-                    goto continue
+                    continue
                 else
                     local failId = TargetServer
-                    if failId then
-                        AddIgnored(failId, IGNORE_FAILED)
-                        pcall(function()
-                            SendDebug("🐛 Teleport Timeout", string.format("Server %s no response in %ds", failId, TELEPORT_TIMEOUT))
-                        end)
-                    end
+                    if failId then AddIgnored(failId, IGNORE_FAILED) end
+                    pcall(function() SendDebug("🐛 Teleport Timeout", string.format("Server %s no response in %ds", failId or "unknown", TELEPORT_TIMEOUT)) end)
                     Notify("⚠️ Timeout", "Server didn't respond, trying next")
                     ResetTeleportState()
                     task.wait(TELEPORT_RETRY_WAIT)
                 end
             end
         end
-
-        ::continue::
         if not found then
-            local nextCursor = res and res.nextPageCursor or ""
+            local nextCursor = res.nextPageCursor or ""
             if nextCursor ~= "" then
                 cursor = nextCursor
                 task.wait(PAGE_WAIT)
@@ -632,21 +509,15 @@ local function ServerHop()
             end
         end
     end
-
     ResetTeleportState()
     IsHopping = false
 end
 
--- ============================================
--- AUTO EXECUTE (QueueAutoExec)
--- ============================================
+-- Auto Execute
 local LOADER_URL = "https://raw.githubusercontent.com/Rzor731/VD-AUTO-FARM/refs/heads/main/loader.lua"
 local AutoExecuteQueued = false
-
 local function QueueAutoExec()
-    if AutoExecuteQueued or not ToggleValue("AutoExecute") then
-        return
-    end
+    if AutoExecuteQueued or not Toggles.AutoExecute.Value then return end
     if type(queue_on_teleport) ~= "function" then
         Notify("Auto Execute", "queue_on_teleport not available", 5)
         return
@@ -661,129 +532,123 @@ local function QueueAutoExec()
     end
 end
 
--- ============================================
--- BUILD UI DENGAN LUMENUI
--- ============================================
-local Window = Lumen:CreateWindow({
-    Title = "Oxio Auto Farm",
-    Icon = "bot",
-    -- Author, Footer, Color, dll opsional
+-- ====== BUAT UI DENGAN LUMENHUB ======
+local Window = Lumen:Window({
+    Title = "VD Auto Farm",
+    Author = "",
+    Footer = "version: 1.0.0",
+    Color = Color3.fromRGB(255, 100, 100),
+    Version = 1,
+    Search = false,
+    Image = "bot",  -- ikon untuk tombol toggle (opsional)
 })
 
-local AutoFarmTab = Window:AddTab("Auto Farm", "zap")
-local SettingsTab = Window:AddTab("Settings", "settings")
+-- Tabs
+local TabsUI = {
+    AutoFarm = Window:AddTab({ Name = "AutoFarm", Icon = "zap" }),
+    Settings = Window:AddTab({ Name = "Settings", Icon = "settings" }),
+}
 
--- Section Auto Farm
-local AutoFarmSection = AutoFarmTab:AddLeftGroupbox("Auto Farm", "zap")
-local WebhookSection = AutoFarmTab:AddRightGroupbox("Webhook", "webhook")
+-- Tab AutoFarm
+local autoSection = TabsUI.AutoFarm:AddSection("Auto Farm", true)
+local hstack = autoSection:AddHStack({ Padding = 10, Sizing = "Equal" })
+local leftCol = hstack:AddVStack({ Padding = 3 })
+local rightCol = hstack:AddVStack({ Padding = 3 })
 
--- Toggle Auto Farm
-local toggleFarm = AutoFarmSection:AddToggle("EnableAutoFarm", {
-    Text = "Enable Auto Farm",
-    Tooltip = "Teleport Survivor to finish",
+-- Left column: Toggles
+local toggleAutoFarm = leftCol:AddToggle({
+    Title = "Enable Auto Farm",
+    Content = "Teleport Survivor to finish",
     Default = false,
+    Save = true,
 })
-Toggles.EnableAutoFarm = toggleFarm
+Toggles.EnableAutoFarm = toggleAutoFarm
 
--- Toggle Server Hop
-local toggleHop = AutoFarmSection:AddToggle("ServerHop", {
-    Text = "Server Hop",
-    Tooltip = "Hop to 2 player servers when round is active",
+local toggleServerHop = leftCol:AddToggle({
+    Title = "Server Hop",
+    Content = "Hop to 2 player servers when round is active",
     Default = false,
+    Save = true,
     Callback = function(v)
         if v then task.spawn(ServerHop) end
     end,
 })
-Toggles.ServerHop = toggleHop
+Toggles.ServerHop = toggleServerHop
 
--- Toggle Auto Execute
-local toggleExec = AutoFarmSection:AddToggle("AutoExecute", {
-    Text = "Auto Execute",
-    Tooltip = "Auto-execute script after server hop",
+local toggleAutoExec = leftCol:AddToggle({
+    Title = "Auto Execute",
+    Content = "Auto-execute script after server hop",
     Default = false,
+    Save = true,
     Callback = function(v)
-        if v then
-            QueueAutoExec()
-        else
-            AutoExecuteQueued = false
-        end
+        if v then QueueAutoExec() else AutoExecuteQueued = false end
     end,
 })
-Toggles.AutoExecute = toggleExec
+Toggles.AutoExecute = toggleAutoExec
 
--- Webhook section
-local toggleWebhook = WebhookSection:AddToggle("EnableWebhook", {
-    Text = "Enable Webhook",
-    Tooltip = "Enable Discord webhook notifications",
+-- Right column: Webhook
+local toggleWebhook = rightCol:AddToggle({
+    Title = "Enable Webhook",
     Default = false,
+    Save = true,
 })
 Toggles.EnableWebhook = toggleWebhook
 
-local inputWebhook = WebhookSection:AddInput("WebhookLink", {
-    Text = "Webhook Link",
-    Placeholder = "https://discord.com/api/webhooks/...",
+local inputWebhook = rightCol:AddInput({
+    Title = "Webhook Link",
+    Placeholder = "Enter webhook URL...",
     Default = "",
-    Numeric = false,
+    Save = true,
 })
 Options.WebhookLink = inputWebhook
 
-WebhookSection:AddButton("Test Webhook", function()
-    local success, msg = SendWebhook("🔔 Webhook Test", "Test from VD Auto Farm!", true)
-    if success then
-        Notify("Webhook Success", "Test message sent!")
-    else
-        Notify("Webhook Failed", msg, 5)
-    end
-end)
-
--- Settings tab
-local SettingsSection = SettingsTab:AddLeftGroupbox("Menu", "settings")
-SettingsSection:AddToggle("ShowCustomCursor", {
-    Text = "Custom Cursor",
-    Default = false,
-    Callback = function(v)
-        Lumen.ShowCustomCursor = v
+rightCol:AddButton({
+    Title = "Test Webhook",
+    Callback = function()
+        local ok, msg = SendWebhook("🔔 Webhook Test", "Test from VD Auto Farm!", true)
+        if ok then Notify("Webhook Success", "Test message sent!")
+        else Notify("Webhook Failed", msg, 5) end
     end,
 })
-SettingsSection:AddToggle("KeybindMenuOpen", {
-    Text = "Open Keybind Menu",
-    Default = false,
-    Callback = function(v)
-        Lumen.KeybindFrame.Visible = v
+
+-- Tab Settings
+local settingsSection = TabsUI.Settings:AddSection("Menu", true)
+settingsSection:AddDivider()
+settingsSection:AddParagraph({
+    Title = "Menu bind",
+    Content = "Press key to toggle menu",
+})
+local menuKeybind = settingsSection:AddKeybind({
+    Title = "Menu Keybind",
+    Content = "Toggle menu visibility",
+    Default = Enum.KeyCode.RightShift,
+    Save = false,
+    Callback = function()
+        local hub = CoreGui:FindFirstChild("BHub")
+        if hub then
+            local holder = hub:FindFirstChild("DropShadowHolder")
+            if holder then holder.Visible = not holder.Visible end
+        end
     end,
 })
-SettingsSection:AddSlider("UICornerSlider", {
-    Text = "Corner Radius",
-    Default = 8,
-    Min = 0,
-    Max = 20,
-    Rounding = 0,
-    Callback = function(v)
-        Window:SetCornerRadius(v)
+Options.MenuKeybind = menuKeybind
+
+settingsSection:AddButton({
+    Title = "Unload",
+    Callback = function()
+        Unloaded = true
+        local hub = CoreGui:FindFirstChild("BHub")
+        if hub then hub:Destroy() end
     end,
 })
-SettingsSection:AddDivider()
-SettingsSection:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", {
-    Default = "RightShift",
-    NoUI = true,
-    Text = "Menu keybind",
-})
-SettingsSection:AddButton("Unload", function()
-    Lumen:Unload()
-    Library.Unloaded = true
-end)
 
--- Set keybind toggle
-Lumen.ToggleKeybind = Lumen.Options.MenuKeybind
-
--- ============================================
--- MAIN LOOP & AUTO EXECUTE
--- ============================================
+-- ====== Jalankan loop utama ======
 task.spawn(function()
-    while not Library.Unloaded do
+    while not Unloaded do
         pcall(BeatGame)
         task.wait(1)
     end
 end)
 
+-- Auto-execute pertama kali
 QueueAutoExec()
